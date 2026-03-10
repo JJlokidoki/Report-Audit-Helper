@@ -193,7 +193,7 @@ export default function SystemInfoPage() {
 
   return (
     <form
-      className="p-4 space-y-2"
+      className="space-y-2 max-w-4xl"
       onSubmit={(e) => {
         e.preventDefault();
         saveMutation.mutate();
@@ -203,74 +203,81 @@ export default function SystemInfoPage() {
         <input type="checkbox" defaultChecked />
         <div className="collapse-title font-medium">Описание</div>
         <div className="collapse-content">
-          <p className="text-base-content/70">Будет добавлен WYSIWYG редактор</p>
+          <p className="text-base-content/50 text-sm font-mono">// будет добавлен WYSIWYG редактор</p>
         </div>
       </div>
 
       <div className="collapse collapse-arrow bg-base-200">
         <input type="checkbox" defaultChecked />
         <div className="collapse-title font-medium">Данные об объекте</div>
-        <div className="collapse-content space-y-2">
-          <div className="form-control">
-            <label className="label"><span className="label-text">Название АС</span></label>
-            <input className="input input-bordered" value={form.asName ?? ""} onChange={(e) => updateForm("asName", e.target.value || null)} />
-          </div>
-          <div className="form-control">
-            <label className="label"><span className="label-text">КЕ идентификатор</span></label>
-            <input className="input input-bordered" value={form.keId ?? ""} onChange={(e) => updateForm("keId", e.target.value || null)} />
-          </div>
-          <div className="form-control">
-            <label className="label"><span className="label-text">URL тестового стенда</span></label>
-            <input className="input input-bordered" value={form.url ?? ""} onChange={(e) => updateForm("url", e.target.value || null)} />
-          </div>
-          <div className="form-control">
-            <label className="label"><span className="label-text">Дата начала</span></label>
-            <input type="date" className="input input-bordered" value={toDateStr(form.dateStart)} onChange={(e) => updateForm("dateStart", e.target.value || null)} />
-          </div>
-          <div className="form-control">
-            <label className="label"><span className="label-text">Дата окончания</span></label>
-            <input type="date" className="input input-bordered" value={toDateStr(form.dateEnd)} onChange={(e) => updateForm("dateEnd", e.target.value || null)} />
-          </div>
-          <div className="form-control">
-            <label className="label"><span className="label-text">Сегмент сети</span></label>
-            <input className="input input-bordered" value={form.segment ?? ""} onChange={(e) => updateForm("segment", e.target.value || null)} />
-          </div>
-          <div className="form-control">
-            <label className="label"><span className="label-text">Цель тестирования</span></label>
-            <textarea className="textarea textarea-bordered" rows={2} value={form.goal ?? ""} onChange={(e) => updateForm("goal", e.target.value || null)} />
-          </div>
-          <div className="form-control">
-            <label className="label"><span className="label-text">Условия тестирования</span></label>
-            <textarea className="textarea textarea-bordered" rows={2} value={form.testConditions ?? ""} onChange={(e) => updateForm("testConditions", e.target.value || null)} />
-          </div>
-          <div className="form-control">
-            <label className="label"><span className="label-text">Исполнители</span></label>
-            <ul className="list-disc list-inside mb-2">
-              {executors.map((e) => (
-                <li key={e.id} className="flex items-center gap-2">
-                  {e.name} {e.position && `(${e.position})`}
-                  <button type="button" className="btn btn-ghost btn-error btn-xs" onClick={() => setExecutorsLocal((prev) => prev.filter((x) => x.id !== e.id))}>×</button>
-                </li>
-              ))}
-            </ul>
-            <div className="flex flex-wrap gap-2">
-              <select className="select select-bordered select-sm w-48" value={selectedExecutorId} onChange={(e) => setSelectedExecutorId(e.target.value)}>
-                <option value="">Выбрать...</option>
-                {availableExecutors.map((e) => (
-                  <option key={e.id} value={e.id}>{e.name}</option>
+        <div className="collapse-content">
+          <div className="grid grid-cols-3 gap-x-4 gap-y-3">
+
+            <div className="form-control col-span-2">
+              <label className="label py-1"><span className="label-text">Название АС</span></label>
+              <input className="input input-bordered w-full" value={form.asName ?? ""} onChange={(e) => updateForm("asName", e.target.value || null)} />
+            </div>
+            <div className="form-control">
+              <label className="label py-1"><span className="label-text">КЕ идентификатор</span></label>
+              <input className="input input-bordered w-full" value={form.keId ?? ""} onChange={(e) => updateForm("keId", e.target.value || null)} />
+            </div>
+
+            <div className="form-control col-span-3">
+              <label className="label py-1"><span className="label-text">URL тестового стенда</span></label>
+              <input className="input input-bordered w-full font-mono text-sm" value={form.url ?? ""} onChange={(e) => updateForm("url", e.target.value || null)} />
+            </div>
+
+            <div className="form-control">
+              <label className="label py-1"><span className="label-text">Дата начала</span></label>
+              <input type="date" className="input input-bordered w-full" value={toDateStr(form.dateStart)} onChange={(e) => updateForm("dateStart", e.target.value || null)} />
+            </div>
+            <div className="form-control">
+              <label className="label py-1"><span className="label-text">Дата окончания</span></label>
+              <input type="date" className="input input-bordered w-full" value={toDateStr(form.dateEnd)} onChange={(e) => updateForm("dateEnd", e.target.value || null)} />
+            </div>
+            <div className="form-control">
+              <label className="label py-1"><span className="label-text">Сегмент сети</span></label>
+              <input className="input input-bordered w-full" value={form.segment ?? ""} onChange={(e) => updateForm("segment", e.target.value || null)} />
+            </div>
+
+            <div className="form-control col-span-3">
+              <label className="label py-1"><span className="label-text">Цель тестирования</span></label>
+              <textarea className="textarea textarea-bordered w-full" rows={2} value={form.goal ?? ""} onChange={(e) => updateForm("goal", e.target.value || null)} />
+            </div>
+            <div className="form-control col-span-3">
+              <label className="label py-1"><span className="label-text">Условия тестирования</span></label>
+              <textarea className="textarea textarea-bordered w-full" rows={2} value={form.testConditions ?? ""} onChange={(e) => updateForm("testConditions", e.target.value || null)} />
+            </div>
+
+            <div className="form-control col-span-3">
+              <label className="label py-1"><span className="label-text">Исполнители</span></label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {executors.map((e) => (
+                  <span key={e.id} className="inline-flex items-center gap-1.5 px-2 py-1 bg-base-300 border border-base-300 text-sm">
+                    <span>{e.name}{e.position && <span className="text-base-content/50 font-mono text-xs ml-1">({e.position})</span>}</span>
+                    <button type="button" className="text-error/60 hover:text-error leading-none" onClick={() => setExecutorsLocal((prev) => prev.filter((x) => x.id !== e.id))}>×</button>
+                  </span>
                 ))}
-              </select>
-              <button type="button" className="btn btn-sm btn-ghost" onClick={handleAddExecutor}>Добавить</button>
-              {!addExecutorMode ? (
-                <button type="button" className="btn btn-sm btn-ghost" onClick={() => setAddExecutorMode(true)}>Добавить нового</button>
-              ) : (
-                <div className="flex gap-2 items-end">
-                  <input className="input input-bordered input-sm w-32" placeholder="Имя" value={newExecutor.name} onChange={(e) => setNewExecutor((p) => ({ ...p, name: e.target.value }))} />
-                  <input className="input input-bordered input-sm w-32" placeholder="Должность" value={newExecutor.position} onChange={(e) => setNewExecutor((p) => ({ ...p, position: e.target.value }))} />
-                  <button type="button" className="btn btn-sm btn-primary" onClick={handleAddNewExecutor} disabled={createExecutorMutation.isPending}>Сохранить</button>
-                  <button type="button" className="btn btn-sm btn-ghost" onClick={() => setAddExecutorMode(false)}>Отмена</button>
-                </div>
-              )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <select className="select select-bordered select-sm w-48" value={selectedExecutorId} onChange={(e) => setSelectedExecutorId(e.target.value)}>
+                  <option value="">Выбрать...</option>
+                  {availableExecutors.map((e) => (
+                    <option key={e.id} value={e.id}>{e.name}</option>
+                  ))}
+                </select>
+                <button type="button" className="btn btn-sm btn-ghost" onClick={handleAddExecutor}>Добавить</button>
+                {!addExecutorMode ? (
+                  <button type="button" className="btn btn-sm btn-ghost" onClick={() => setAddExecutorMode(true)}>+ Новый</button>
+                ) : (
+                  <div className="flex gap-2 items-end">
+                    <input className="input input-bordered input-sm w-32" placeholder="Имя" value={newExecutor.name} onChange={(e) => setNewExecutor((p) => ({ ...p, name: e.target.value }))} />
+                    <input className="input input-bordered input-sm w-32" placeholder="Должность" value={newExecutor.position} onChange={(e) => setNewExecutor((p) => ({ ...p, position: e.target.value }))} />
+                    <button type="button" className="btn btn-sm btn-primary" onClick={handleAddNewExecutor} disabled={createExecutorMutation.isPending}>Сохранить</button>
+                    <button type="button" className="btn btn-sm btn-ghost" onClick={() => setAddExecutorMode(false)}>Отмена</button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -279,27 +286,29 @@ export default function SystemInfoPage() {
       <div className="collapse collapse-arrow bg-base-200">
         <input type="checkbox" />
         <div className="collapse-title font-medium">Модель нарушителя</div>
-        <div className="collapse-content space-y-2">
-          <div className="form-control">
-            <label className="label"><span className="label-text">Уровень квалификации</span></label>
-            <select className="select select-bordered" value={form.qualificationLevel ?? ""} onChange={(e) => updateForm("qualificationLevel", e.target.value || null)}>
-              <option value="">—</option>
-              {QUAL_OPTIONS.map(([v]) => <option key={v} value={v}>{v}</option>)}
-            </select>
-          </div>
-          <div className="form-control">
-            <label className="label"><span className="label-text">Уровень доступа</span></label>
-            <select className="select select-bordered" value={form.accessLevel ?? ""} onChange={(e) => updateForm("accessLevel", e.target.value || null)}>
-              <option value="">—</option>
-              {ACCESS_OPTIONS.map(([v]) => <option key={v} value={v}>{v}</option>)}
-            </select>
-          </div>
-          <div className="form-control">
-            <label className="label"><span className="label-text">Уровень осведомлённости</span></label>
-            <select className="select select-bordered" value={form.knowledgeLevel ?? ""} onChange={(e) => updateForm("knowledgeLevel", e.target.value || null)}>
-              <option value="">—</option>
-              {KNOWLEDGE_OPTIONS.map(([v]) => <option key={v} value={v}>{v}</option>)}
-            </select>
+        <div className="collapse-content">
+          <div className="grid grid-cols-3 gap-x-4 gap-y-3">
+            <div className="form-control">
+              <label className="label py-1"><span className="label-text">Уровень квалификации</span></label>
+              <select className="select select-bordered w-full" value={form.qualificationLevel ?? ""} onChange={(e) => updateForm("qualificationLevel", e.target.value || null)}>
+                <option value="">—</option>
+                {QUAL_OPTIONS.map(([v]) => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
+            <div className="form-control">
+              <label className="label py-1"><span className="label-text">Уровень доступа</span></label>
+              <select className="select select-bordered w-full" value={form.accessLevel ?? ""} onChange={(e) => updateForm("accessLevel", e.target.value || null)}>
+                <option value="">—</option>
+                {ACCESS_OPTIONS.map(([v]) => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
+            <div className="form-control">
+              <label className="label py-1"><span className="label-text">Уровень осведомлённости</span></label>
+              <select className="select select-bordered w-full" value={form.knowledgeLevel ?? ""} onChange={(e) => updateForm("knowledgeLevel", e.target.value || null)}>
+                <option value="">—</option>
+                {KNOWLEDGE_OPTIONS.map(([v]) => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -308,21 +317,23 @@ export default function SystemInfoPage() {
         <input type="checkbox" />
         <div className="collapse-title font-medium">Используемое ПО</div>
         <div className="collapse-content">
-          <table className="table table-sm">
+          <table className="table table-sm mb-3">
             <thead>
-              <tr><th>Название</th><th>Версия</th><th></th></tr>
+              <tr><th>Название</th><th>Версия</th><th /></tr>
             </thead>
             <tbody>
               {software.map((s) => (
                 <tr key={s.id}>
                   <td>{s.name}</td>
-                  <td>{s.version ?? "—"}</td>
-                  <td><button type="button" className="btn btn-ghost btn-error btn-xs" onClick={() => setSoftwareLocal((prev) => prev.filter((x) => x.id !== s.id))}>×</button></td>
+                  <td className="font-mono text-sm text-base-content/60">{s.version ?? "—"}</td>
+                  <td>
+                    <button type="button" className="btn btn-ghost btn-xs text-error/60 hover:text-error" onClick={() => setSoftwareLocal((prev) => prev.filter((x) => x.id !== s.id))}>×</button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <div className="flex flex-wrap gap-2 mt-2">
+          <div className="flex flex-wrap gap-2">
             <select className="select select-bordered select-sm w-48" value={selectedSoftwareId} onChange={(e) => setSelectedSoftwareId(e.target.value)}>
               <option value="">Выбрать...</option>
               {availableSoftware.map((s) => (
@@ -340,7 +351,7 @@ export default function SystemInfoPage() {
       </div>
 
       <div className="pt-2">
-        <button type="submit" className="btn btn-primary" disabled={saveMutation.isPending}>
+        <button type="submit" className="btn btn-primary font-display tracking-wider" disabled={saveMutation.isPending}>
           {saveMutation.isPending ? "Сохранение…" : "Сохранить"}
         </button>
       </div>

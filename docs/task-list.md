@@ -35,7 +35,7 @@
 
 ### 2.1 Инициализация
 - [x] Создать Vite + React 19 + TypeScript проект
-- [x] Настроить Tailwind CSS v4 + DaisyUI v5 (тема corporate)
+- [x] Настроить Tailwind CSS v4 + DaisyUI v5
 - [x] Настроить React Router v7
 - [x] Настроить TanStack Query + Axios
 - [x] Определить TypeScript интерфейсы (`types/index.ts`)

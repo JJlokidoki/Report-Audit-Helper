@@ -1,17 +1,20 @@
-import { Outlet, useParams } from "react-router-dom";
+import { Outlet, useParams, useLocation } from "react-router-dom";
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
+import { useTheme } from "../../hooks/useTheme";
 
 export default function Layout() {
   const { id } = useParams();
+  const location = useLocation();
   const hasReport = !!id;
+  const { theme, toggle } = useTheme();
 
   return (
-    <div className="flex flex-col h-screen">
-      <Navbar />
+    <div className="flex flex-col h-screen bg-base-100">
+      <Navbar theme={theme} onThemeToggle={toggle} />
       <div className="flex flex-1 overflow-hidden">
         {hasReport && <Sidebar />}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main key={location.pathname} className="animate-page flex-1 overflow-y-auto p-6 dot-grid">
           <Outlet />
         </main>
       </div>

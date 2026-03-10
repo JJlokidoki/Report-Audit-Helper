@@ -1,4 +1,185 @@
 @import "tailwindcss";
+
 @plugin "daisyui" {
-  themes: corporate --default;
+  themes: dark --default, light;
+}
+
+@theme {
+  --font-sans: "Sora", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --font-display: "Chakra Petch", system-ui, sans-serif;
+}
+
+/* ── Light Theme: Arctic Terminal ───────────────────────── */
+[data-theme="light"] {
+  --color-base-100: oklch(99% 0.004 240);
+  --color-base-200: oklch(95.5% 0.008 240);
+  --color-base-300: oklch(90% 0.01 240);
+  --color-base-content: oklch(18% 0.025 250);
+
+  --color-primary: oklch(52% 0.16 194);
+  --color-primary-content: oklch(98% 0.005 194);
+
+  --color-secondary: oklch(48% 0.1 248);
+  --color-secondary-content: oklch(98% 0.005 248);
+
+  --color-accent: oklch(58% 0.18 68);
+  --color-accent-content: oklch(98% 0.005 68);
+
+  --color-neutral: oklch(30% 0.025 250);
+  --color-neutral-content: oklch(97% 0.005 250);
+
+  --color-info: oklch(52% 0.14 224);
+  --color-info-content: oklch(98% 0.005 224);
+
+  --color-success: oklch(50% 0.18 145);
+  --color-success-content: oklch(98% 0.005 145);
+
+  --color-warning: oklch(56% 0.17 68);
+  --color-warning-content: oklch(98% 0.005 68);
+
+  --color-error: oklch(52% 0.22 26);
+  --color-error-content: oklch(98% 0.005 26);
+
+  --radius-field: 0.125rem;
+  --radius-box: 0.25rem;
+  --radius-selector: 0.125rem;
+  --radius-badge: 0.125rem;
+}
+
+/* ── Dark Theme: Terminal SOC ────────────────────────────── */
+[data-theme="dark"] {
+  --color-base-100: oklch(17% 0.022 250);
+  --color-base-200: oklch(21% 0.022 250);
+  --color-base-300: oklch(27% 0.02 250);
+  --color-base-content: oklch(86% 0.012 240);
+
+  --color-primary: oklch(74% 0.15 194);
+  --color-primary-content: oklch(12% 0.02 194);
+
+  --color-secondary: oklch(58% 0.1 248);
+  --color-secondary-content: oklch(90% 0.01 248);
+
+  --color-accent: oklch(74% 0.18 68);
+  --color-accent-content: oklch(12% 0.02 68);
+
+  --color-neutral: oklch(22% 0.02 250);
+  --color-neutral-content: oklch(78% 0.01 250);
+
+  --color-info: oklch(66% 0.14 224);
+  --color-info-content: oklch(12% 0.01 224);
+
+  --color-success: oklch(68% 0.18 145);
+  --color-success-content: oklch(12% 0.01 145);
+
+  --color-warning: oklch(74% 0.18 68);
+  --color-warning-content: oklch(12% 0.02 68);
+
+  --color-error: oklch(62% 0.24 26);
+  --color-error-content: oklch(12% 0.01 26);
+
+  --radius-field: 0.125rem;
+  --radius-box: 0.25rem;
+  --radius-selector: 0.125rem;
+  --radius-badge: 0.125rem;
+}
+
+/* ── Global ─────────────────────────────────────────────── */
+body {
+  font-family: var(--font-sans);
+  background-color: oklch(17% 0.022 250);
+}
+
+/* Dot-grid background on main content */
+.dot-grid {
+  background-image: radial-gradient(
+    circle,
+    oklch(50% 0.02 250 / 0.18) 1px,
+    transparent 1px
+  );
+  background-size: 24px 24px;
+}
+[data-theme="dark"] .dot-grid {
+  background-image: radial-gradient(
+    circle,
+    oklch(30% 0.02 250 / 0.35) 1px,
+    transparent 1px
+  );
+}
+
+/* ── Animations ─────────────────────────────────────────── */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.animate-page {
+  animation: fadeSlideIn 0.28s ease-out both;
+}
+
+.animate-sidebar-item {
+  animation: slideInLeft 0.22s ease-out both;
+}
+
+.cursor-blink {
+  animation: cursorBlink 1.1s step-end infinite;
+}
+
+/* ── Typography overrides ───────────────────────────────── */
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* ── Scrollbar ──────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: oklch(14.5% 0.022 250);
+}
+::-webkit-scrollbar-thumb {
+  background: oklch(28% 0.022 250);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(38% 0.02 250);
+}
+
+/* ── Table tweaks ───────────────────────────────────────── */
+.table th {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: oklch(84% 0.012 240 / 0.5);
+}
+
+/* ── Collapse section titles ────────────────────────────── */
+.collapse-title {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
 }

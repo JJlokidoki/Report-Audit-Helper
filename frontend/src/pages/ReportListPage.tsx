@@ -22,6 +22,14 @@ const TYPE_LABELS: Record<ReportType, string> = {
   iot: "IoT",
 };
 
+const TYPE_COLORS: Record<ReportType, string> = {
+  web: "text-primary border-primary/40 bg-primary/8",
+  ios: "text-accent border-accent/40 bg-accent/8",
+  android: "text-success border-success/40 bg-success/8",
+  ai: "text-secondary border-secondary/40 bg-secondary/8",
+  iot: "text-warning border-warning/40 bg-warning/8",
+};
+
 const REPORT_TYPES: ReportType[] = ["web", "ios", "android", "ai", "iot"];
 
 const columnHelper = createColumnHelper<ReportListItem>();
@@ -67,34 +75,50 @@ export default function ReportListPage() {
     columnHelper.accessor("name", {
       header: "Название",
       cell: ({ row }) => (
-        <Link to={`/reports/${row.original.id}/system-info`} className="link link-hover">
+        <Link
+          to={`/reports/${row.original.id}/system-info`}
+          className="font-medium text-base-content hover:text-primary transition-colors duration-150"
+        >
           {row.original.name}
         </Link>
       ),
     }),
     columnHelper.accessor("report_type", {
       header: "Тип",
-      cell: ({ getValue }) => (
-        <span className="badge badge-ghost">{TYPE_LABELS[getValue()]}</span>
-      ),
+      cell: ({ getValue }) => {
+        const t = getValue();
+        return (
+          <span className={`font-mono text-[11px] tracking-widest px-1.5 py-0.5 border ${TYPE_COLORS[t]}`}>
+            {TYPE_LABELS[t]}
+          </span>
+        );
+      },
     }),
     columnHelper.accessor("created_at", {
-      header: "Дата создания",
-      cell: ({ getValue }) => new Date(getValue()).toLocaleDateString("ru-RU"),
+      header: "Создан",
+      cell: ({ getValue }) => (
+        <span className="font-mono text-xs text-base-content/50">
+          {new Date(getValue()).toLocaleDateString("ru-RU")}
+        </span>
+      ),
     }),
     columnHelper.accessor("vulnerability_count", {
       header: "Уязвимости",
+      cell: ({ getValue }) => (
+        <span className={`font-mono text-sm font-medium ${getValue() > 0 ? "text-error" : "text-base-content/40"}`}>
+          {getValue()}
+        </span>
+      ),
     }),
     columnHelper.display({
       id: "actions",
-      header: "Действия",
       cell: ({ row }) => (
         <button
           type="button"
-          className="btn btn-ghost btn-error btn-sm"
+          className="btn btn-ghost btn-xs text-error/60 hover:text-error hover:bg-error/10 font-mono tracking-wider"
           onClick={() => setDeleteTarget(row.original)}
         >
-          Удалить
+          ✕ удалить
         </button>
       ),
     }),
@@ -118,10 +142,19 @@ export default function ReportListPage() {
   };
 
   return (
-    <div className="p-4">
-      <div className="flex flex-wrap gap-4 items-center mb-4">
+    <div className="max-w-5xl">
+      <div className="mb-6">
+        <h1 className="font-display text-2xl font-semibold tracking-wide text-base-content mb-1">
+          Отчёты
+        </h1>
+        <p className="text-sm text-base-content/45 font-mono">
+          // управление аудитами безопасности
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-3 items-center mb-5">
         <select
-          className="select select-bordered w-40"
+          className="select select-bordered select-sm w-40 font-mono text-xs"
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
         >
@@ -134,32 +167,43 @@ export default function ReportListPage() {
         </select>
         <button
           type="button"
-          className="btn btn-primary"
+          className="btn btn-sm btn-primary font-display tracking-wider"
           onClick={() => setCreateModalOpen(true)}
         >
-          Создать отчёт
+          + Новый отчёт
         </button>
       </div>
 
       {isLoading ? (
-        <span className="loading loading-spinner loading-md" />
+        <div className="flex items-center gap-3 text-base-content/40 py-8">
+          <span className="loading loading-spinner loading-sm" />
+          <span className="font-mono text-sm">Загрузка...</span>
+        </div>
+      ) : reports.length === 0 ? (
+        <div className="border border-base-300 bg-base-200/30 p-12 text-center">
+          <p className="font-mono text-base-content/35 text-sm">// отчётов не найдено</p>
+        </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="table table-zebra">
+        <div className="overflow-x-auto border border-base-300 bg-base-200/20">
+          <table className="table table-sm">
             <thead>
               {table.getHeaderGroups().map((hg) => (
-                <tr key={hg.id}>
+                <tr key={hg.id} className="border-b border-base-300">
                   {hg.headers.map((h) => (
-                    <th key={h.id}>{flexRender(h.column.columnDef.header, h.getContext())}</th>
+                    <th key={h.id} className="bg-base-200/60 py-3">
+                      {flexRender(h.column.columnDef.header, h.getContext())}
+                    </th>
                   ))}
                 </tr>
               ))}
             </thead>
             <tbody>
               {table.getRowModel().rows.map((row) => (
-                <tr key={row.id}>
+                <tr key={row.id} className="border-b border-base-300/40 hover:bg-primary/3 transition-colors duration-100">
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                    <td key={cell.id} className="py-3">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
                   ))}
                 </tr>
               ))}
@@ -170,26 +214,35 @@ export default function ReportListPage() {
 
       {createModalOpen && (
         <dialog open className="modal modal-open">
-          <div className="modal-box">
-            <h3 className="font-bold text-lg">Создать отчёт</h3>
-            <div className="form-control mt-4">
-              <label className="label">
-                <span className="label-text">Название</span>
+          <div className="modal-box bg-base-200 border border-base-300 rounded-sm max-w-md">
+            <div className="flex items-center gap-2 mb-5">
+              <span className="font-mono text-primary">›_</span>
+              <h3 className="font-display font-semibold tracking-wide">Новый отчёт</h3>
+            </div>
+            <div className="form-control mb-3">
+              <label className="label py-1">
+                <span className="label-text font-mono text-xs text-base-content/50 tracking-wider uppercase">
+                  Название
+                </span>
               </label>
               <input
                 type="text"
-                className="input input-bordered"
+                className="input input-bordered font-sans"
                 value={createName}
                 onChange={(e) => setCreateName(e.target.value)}
-                placeholder="Название отчёта"
+                placeholder="Название проекта"
+                autoFocus
+                onKeyDown={(e) => e.key === "Enter" && handleCreate()}
               />
             </div>
-            <div className="form-control mt-2">
-              <label className="label">
-                <span className="label-text">Тип</span>
+            <div className="form-control mb-5">
+              <label className="label py-1">
+                <span className="label-text font-mono text-xs text-base-content/50 tracking-wider uppercase">
+                  Тип
+                </span>
               </label>
               <select
-                className="select select-bordered"
+                className="select select-bordered font-mono"
                 value={createType}
                 onChange={(e) => setCreateType(e.target.value as ReportType)}
               >
@@ -200,13 +253,17 @@ export default function ReportListPage() {
                 ))}
               </select>
             </div>
-            <div className="modal-action">
-              <button type="button" className="btn btn-ghost" onClick={() => setCreateModalOpen(false)}>
+            <div className="modal-action gap-2">
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm font-mono"
+                onClick={() => setCreateModalOpen(false)}
+              >
                 Отмена
               </button>
               <button
                 type="button"
-                className="btn btn-primary"
+                className="btn btn-primary btn-sm font-display tracking-wider"
                 onClick={handleCreate}
                 disabled={createMutation.isPending}
               >

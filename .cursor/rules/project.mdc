@@ -7,7 +7,7 @@ alwaysApply: true
 
 ## Архитектура
 - Микросервисы на FastAPI (Python 3.11+), каждый — отдельный процесс
-- Frontend: React 18 + TypeScript + Vite + DaisyUI (тема corporate)
+- Frontend: React 18 + TypeScript + Vite + DaisyUI 
 - БД: SQLite через SQLAlchemy ORM
 - API формат: JSON (application/json)
 

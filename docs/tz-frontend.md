@@ -41,9 +41,28 @@
 - Кнопка "Создать отчёт" → модалка: название (input) + тип (select: web/ios/android/ai/iot)
 
 ### 2. SystemInfoPage
-- Форма: asName, keId, url, dateStart (date picker), dateEnd (date picker), segment, goal, qualificationLevel, accessLevel, knowledgeLevel, testConditions (textarea)
+Страница разбита на 4 секции (DaisyUI collapse/accordion), каждая сворачиваема:
+
+**2.1. Описание**
+- RichEditor (TipTap) с расширением `Image`: поддержка вставки скриншотов через paste из буфера и drag-n-drop
+- Изображения сохраняются как base64 внутри HTML
+- Поле `description` в SystemInfo
+
+**2.2. Данные об объекте** *(поля TBD)*
+- Заглушка: текст "Поля будут добавлены позже"
+- Текущие поля формы сохраняются здесь: asName, keId, url, dateStart, dateEnd, segment, goal, testConditions (textarea)
 - Multi-select для Executor (из справочника + кнопка "Добавить нового")
-- Multi-select для Software (из справочника + кнопка "Добавить новый")
+
+**2.3. Модель нарушителя** *(поля TBD)*
+- Заглушка: текст "Поля будут добавлены позже"
+- Текущие поля: qualificationLevel, accessLevel, knowledgeLevel
+
+**2.4. Используемое ПО**
+- Таблица: name + description
+- Combobox/multi-select из справочника Software (предзаполненные значения отмечены)
+- Возможность добавить своё ПО (name + description)
+- Предзаполненные записи (`is_preset=true`) нельзя удалить
+
 - Кнопка "Сохранить" → `PUT /api/reports/{id}/system-info`
 
 ### 3. TestSummaryPage
@@ -101,7 +120,7 @@
 
 ## Библиотеки
 
-- `@tiptap/react`, `@tiptap/starter-kit` — WYSIWYG
+- `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-image` — WYSIWYG с поддержкой изображений
 - `@tanstack/react-query` — кеширование запросов
 - `@tanstack/react-table` — таблицы с сортировкой/фильтрацией
 - `@dnd-kit/core`, `@dnd-kit/sortable` — drag & drop

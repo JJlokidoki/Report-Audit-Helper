@@ -24,6 +24,7 @@
 |------|-----|----------|
 | id | int, PK | Идентификатор |
 | report_id | int, FK(Report), unique | Связь с отчётом (1:1) |
+| description | text | Описание главы (rich text HTML с изображениями) |
 | asName | string | Название АС |
 | keId | string | Идентификатор КЭ |
 | url | string | URL тестового стенда |
@@ -35,6 +36,9 @@
 | accessLevel | string | Уровень доступа |
 | knowledgeLevel | string | Уровень осведомлённости |
 | testConditions | text | Условия тестирования |
+
+> **Разделы "Данные об объекте" и "Модель нарушителя"** — поля будут добавлены позже.
+> Текущие поля `qualificationLevel`, `accessLevel`, `knowledgeLevel` могут быть перенесены в раздел "Модель нарушителя".
 
 ### Executor (справочник)
 | Поле | Тип | Описание |
@@ -49,7 +53,8 @@
 |------|-----|----------|
 | id | int, PK | Идентификатор |
 | name | string, required | Название ПО |
-| version | string | Версия |
+| description | text | Описание |
+| is_preset | bool, default=false | Предзаполненное значение (защищено от удаления) |
 
 ### SystemInfoExecutor (junction)
 | Поле | Тип |
@@ -172,7 +177,7 @@
 - `PUT /api/executors/{id}` — обновить
 - `DELETE /api/executors/{id}` — удалить
 - `GET /api/software` — список
-- `POST /api/software` — создать `{ name, version }`
+- `POST /api/software` — создать `{ name, description }`
 - `PUT /api/software/{id}` — обновить
 - `DELETE /api/software/{id}` — удалить
 
@@ -185,6 +190,19 @@
 - `android` → MSTG Android (заглушка)
 - `iot` → ISTG (заглушка)
 - `ai` → AITG (заглушка)
+
+### Предзаполнение справочника ПО
+При инициализации БД создаются записи Software с `is_preset=true`:
+- Burp Suite — перехватывающий прокси для тестирования веб-приложений
+- Nmap — сканер сети и портов
+- OWASP ZAP — сканер уязвимостей веб-приложений
+- Nuclei — сканер уязвимостей на основе шаблонов
+- SQLMap — инструмент для обнаружения SQL-инъекций
+- Metasploit — фреймворк для тестирования на проникновение
+- Nikto — сканер веб-серверов
+- Dirsearch — инструмент для перебора директорий и файлов
+
+Записи с `is_preset=true` нельзя удалить через API (`DELETE /api/software/{id}` возвращает 403).
 
 ### Каскадное удаление
 DELETE Report удаляет: SystemInfo, Vulnerability (→ AutoTest), SecurityCheck, TestRun (→ TestRunResult, RetestResult)
@@ -199,6 +217,7 @@ services/report-service/
 │   ├── models.py          # SQLAlchemy модели
 │   ├── schemas.py         # Pydantic схемы (request/response)
 │   ├── checklist_data.py  # данные для предзаполнения чеклистов
+│   ├── preset_software.py # предзаполненные записи Software
 │   └── routers/
 │       ├── reports.py
 │       ├── system_info.py

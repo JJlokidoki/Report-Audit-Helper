@@ -2,35 +2,34 @@
 
 ## Фаза 0: Инициализация
 
-- [ ] Создать структуру папок проекта
-- [ ] Инициализировать git-репозиторий
-- [ ] Создать README.md с описанием проекта и инструкцией запуска
-- [ ] Создать .cursor/rules/ для всех сервисов
+- [x] Создать структуру папок проекта
+- [x] Инициализировать git-репозиторий
+- [x] Создать README.md с описанием проекта и инструкцией запуска
+- [x] Создать .cursor/rules/ для всех сервисов
 
 ## Фаза 1: Report Service (backend-core)
 
 ### 1.1 Инфраструктура
-- [ ] Создать `requirements.txt` (fastapi, uvicorn, sqlalchemy, aiosqlite, pydantic)
-- [ ] Реализовать `database.py` (engine, SessionLocal, Base)
-- [ ] Реализовать `main.py` (FastAPI app, CORS, auth_stub middleware)
+- [x] Создать `requirements.txt` (fastapi, uvicorn, sqlalchemy, aiosqlite, pydantic)
+- [x] Реализовать `database.py` (async engine, async_sessionmaker, Base)
+- [x] Реализовать `main.py` (FastAPI app, CORS, auth_stub middleware, lifespan)
 
 ### 1.2 Модели и схемы
-- [ ] Реализовать `models.py` — все SQLAlchemy модели (Report, SystemInfo, Executor, Software, Vulnerability, SecurityCheck, AutoTest, TestRun, TestRunResult, RetestResult, junction tables)
-- [ ] Реализовать `schemas.py` — Pydantic схемы для всех моделей (Create, Update, Response)
-- [ ] Реализовать `checklist_data.py` — данные WSTG v4.2 (91 пункт) + заглушки для MSTG/ISTG/AITG
+- [x] Реализовать `models.py` — все SQLAlchemy 2.0 модели (Report, SystemInfo, Executor, Software, Vulnerability, SecurityCheck, AutoTest, TestRun, TestRunResult, RetestResult, junction tables)
+- [x] Реализовать `schemas.py` — Pydantic v2 схемы (Create, Update, Response)
+- [x] Реализовать `checklist_data.py` — данные WSTG v4.2 (96 пунктов) + заглушки для MSTG/ISTG/AITG
 
 ### 1.3 Роутеры
-- [ ] `routers/reports.py` — CRUD отчётов + автозаполнение чеклиста при создании
-- [ ] `routers/system_info.py` — GET/PUT system-info + привязка executors/software
-- [ ] `routers/vulnerabilities.py` — CRUD уязвимостей + reorder
-- [ ] `routers/checklist.py` — GET чеклист + PUT статус пункта
-- [ ] `routers/executors.py` — CRUD справочника исполнителей
-- [ ] `routers/software.py` — CRUD справочника ПО
+- [x] `routers/reports.py` — CRUD отчётов + автозаполнение чеклиста при создании
+- [x] `routers/system_info.py` — GET/PUT system-info + привязка executors/software
+- [x] `routers/vulnerabilities.py` — CRUD уязвимостей + test-summary + reorder
+- [x] `routers/checklist.py` — GET чеклист с фильтрами + PUT статус пункта
+- [x] `routers/executors.py` — CRUD справочника исполнителей
+- [x] `routers/software.py` — CRUD справочника ПО
 
 ### 1.4 Тесты
-- [ ] `tests/conftest.py` — fixtures (test_client, in-memory SQLite)
-- [ ] Unit-тесты: модели, схемы
-- [ ] Integration-тесты: все эндпоинты (CRUD отчётов, уязвимостей, чеклиста, справочников)
+- [x] `tests/conftest.py` — fixtures (AsyncClient, in-memory SQLite)
+- [x] Integration-тесты: 23 теста — все эндпоинты (reports, vulnerabilities, system-info, checklist, executors, software)
 
 ## Фаза 2: Frontend (базовый)
 
@@ -55,7 +54,7 @@
 
 ### 2.4 Страницы
 - [ ] `ReportListPage` — таблица отчётов (TanStack Table, фильтры, сортировка, создание)
-- [ ] `SystemInfoPage` — форма сведений о системе + multi-select executor/software
+- [ ] `SystemInfoPage` — 4 секции (accordion): описание (RichEditor + вставка скриншотов), данные об объекте (TBD), модель нарушителя (TBD), используемое ПО (multi-select с предзаполнением)
 - [ ] `TestSummaryPage` — карточки счётчиков + таблица уязвимостей
 - [ ] `VulnerabilityListPage` — список с drag-and-drop сортировкой
 - [ ] `VulnerabilityEditPage` — форма редактирования + TipTap WYSIWYG
@@ -65,7 +64,7 @@
 ### 2.5 Компоненты
 - [ ] `SeverityBadge` — цветной badge по severity
 - [ ] `AutomationBadge` — badge по automation_level
-- [ ] `RichEditor` — обёртка TipTap
+- [ ] `RichEditor` — обёртка TipTap с расширением Image (paste + drag-n-drop скриншотов)
 - [ ] `ConfirmModal` — модалка подтверждения
 - [ ] `AIGenerateModal` — модалка AI-генерации (загрузка изображений + стриминг)
 

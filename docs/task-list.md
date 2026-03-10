@@ -34,39 +34,39 @@
 ## Фаза 2: Frontend (базовый)
 
 ### 2.1 Инициализация
-- [ ] Создать Vite + React + TypeScript проект
-- [ ] Настроить Tailwind CSS + DaisyUI (тема corporate)
-- [ ] Настроить React Router v6
-- [ ] Настроить TanStack Query + Axios
-- [ ] Определить TypeScript интерфейсы (`types/index.ts`)
+- [x] Создать Vite + React 19 + TypeScript проект
+- [x] Настроить Tailwind CSS v4 + DaisyUI v5 (тема corporate)
+- [x] Настроить React Router v7
+- [x] Настроить TanStack Query + Axios
+- [x] Определить TypeScript интерфейсы (`types/index.ts`)
 
 ### 2.2 Layout и навигация
-- [ ] Компонент `Layout` (Navbar + Sidebar + Outlet)
-- [ ] Компонент `Navbar` (dropdown отчёта, badge типа, кнопка экспорта)
-- [ ] Компонент `Sidebar` (два раздела с collapse)
-- [ ] Настроить роутинг (все маршруты)
+- [x] Компонент `Layout` (Navbar + Sidebar + Outlet)
+- [x] Компонент `Navbar` (название отчёта, badge типа, кнопка экспорта)
+- [x] Компонент `Sidebar` (два раздела: Отчёт + Ретесты)
+- [x] Настроить роутинг (все маршруты)
 
 ### 2.3 API-клиенты
-- [ ] `api/client.ts` — базовый axios instance
-- [ ] `api/reportApi.ts` — все эндпоинты Report Service
-- [ ] `api/exportApi.ts` — скачивание Word
-- [ ] `api/aiApi.ts` — генерация описаний
+- [x] `api/client.ts` — базовый axios instance с proxy
+- [x] `api/reportApi.ts` — все эндпоинты Report Service
+- [ ] `api/exportApi.ts` — скачивание Word (Фаза 7)
+- [ ] `api/aiApi.ts` — генерация описаний (Фаза 7)
 
 ### 2.4 Страницы
-- [ ] `ReportListPage` — таблица отчётов (TanStack Table, фильтры, сортировка, создание)
-- [ ] `SystemInfoPage` — 4 секции (accordion): описание (RichEditor + вставка скриншотов), данные об объекте (TBD), модель нарушителя (TBD), используемое ПО (multi-select с предзаполнением)
-- [ ] `TestSummaryPage` — карточки счётчиков + таблица уязвимостей
-- [ ] `VulnerabilityListPage` — список с drag-and-drop сортировкой
-- [ ] `VulnerabilityEditPage` — форма редактирования + TipTap WYSIWYG
-- [ ] `ChecklistPage` — таблица с группировкой, inline-редактирование, фильтры
-- [ ] `PlaceholderPage` — заглушка "В разработке"
+- [x] `ReportListPage` — TanStack Table, фильтры, сортировка, создание/удаление
+- [x] `SystemInfoPage` — 4 секции (accordion): описание, данные, модель нарушителя, ПО
+- [x] `TestSummaryPage` — карточки счётчиков + таблица уязвимостей
+- [x] `VulnerabilityListPage` — drag-and-drop (dnd-kit), CRUD
+- [x] `VulnerabilityEditPage` — форма редактирования (textarea-заглушки для TipTap)
+- [x] `ChecklistPage` — группировка по категориям, фильтры, автосохранение
+- [x] `PlaceholderPage` — заглушка "В разработке"
 
 ### 2.5 Компоненты
-- [ ] `SeverityBadge` — цветной badge по severity
-- [ ] `AutomationBadge` — badge по automation_level
-- [ ] `RichEditor` — обёртка TipTap с расширением Image (paste + drag-n-drop скриншотов)
-- [ ] `ConfirmModal` — модалка подтверждения
-- [ ] `AIGenerateModal` — модалка AI-генерации (загрузка изображений + стриминг)
+- [x] `SeverityBadge` — цветной badge по severity
+- [x] `AutomationBadge` — badge по automation_level
+- [ ] `RichEditor` — обёртка TipTap (Фаза 7)
+- [x] `ConfirmModal` — модалка подтверждения
+- [ ] `AIGenerateModal` — модалка AI-генерации (Фаза 7)
 
 ### 2.6 Тесты Frontend
 - [ ] Unit-тесты компонентов (Vitest + React Testing Library)

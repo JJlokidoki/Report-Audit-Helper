@@ -74,14 +74,13 @@
 
 ## Фаза 3: Export Service
 
-- [ ] Создать `requirements.txt` (fastapi, uvicorn, docxtpl, docxcompose, python-docx, httpx)
-- [ ] Реализовать `filler.py` — заполнение шаблона через docxtpl
-- [ ] Реализовать `generator.py` — оркестрация (fetch data → fill → merge)
-- [ ] Реализовать `main.py` — эндпоинт `GET /api/export/{report_id}/word`
-- [ ] Создать заглушки шаблонов для типа `web` (7 файлов .docx)
-- [ ] Создать пустые папки для ios/android/ai/iot
-- [ ] Unit-тесты: filler (mock template)
-- [ ] Integration-тесты: полный цикл генерации (mock Report Service)
+- [x] Создать `requirements.txt` (fastapi, uvicorn, docxtpl, docxcompose, python-docx, httpx)
+- [x] Реализовать `filler.py` — заполнение шаблона через docxtpl
+- [x] Реализовать `generator.py` — оркестрация (fetch data → fill → merge), graceful-skip отсутствующих шаблонов
+- [x] Реализовать `config.py` — REPORT_SERVICE_URL, TEMPLATE_DIR + `trust_env=False` для httpx
+- [x] Реализовать `main.py` — `GET /api/export/{report_id}/word` → StreamingResponse
+- [x] Unit-тесты filler: 3 теста
+- [x] Integration-тесты generator: 6 тестов (mock respx)
 
 ## Фаза 4: AI Vuln Generator
 

@@ -8,7 +8,7 @@ alwaysApply: false
 
 ## Стек
 - React 18, TypeScript strict, Vite
-- DaisyUI + Tailwind CSS, тема: `corporate`
+- DaisyUI + Tailwind CSS
 - React Router v6, TanStack Query, Axios
 - TipTap (WYSIWYG), TanStack Table, dnd-kit, react-hot-toast
 

@@ -4,7 +4,7 @@
 
 - **Фреймворк:** React 18 + TypeScript (strict)
 - **Сборка:** Vite
-- **UI:** DaisyUI + Tailwind CSS, тема `corporate`
+- **UI:** DaisyUI + Tailwind CSS
 - **Роутинг:** React Router v6
 - **Состояние/кеш:** TanStack Query
 - **HTTP:** Axios

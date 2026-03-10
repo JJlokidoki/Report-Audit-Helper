@@ -12,6 +12,13 @@ from app.filler import fill_template
 
 SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
 
+STATUS_LABEL = {
+    "passed": "Выполнено",
+    "failed": "Сломано",
+    "not_applicable": "Не применимо",
+    "not_tested": "Не выполнено",
+}
+
 TEMPLATE_FILES = [
     "01_title.docx",
     "02_toc.docx",
@@ -65,7 +72,13 @@ def _build_contexts(report: dict, system_info: dict, summary: dict, checklist: l
         "total_count": sum(counts.values()),
     }
 
-    checklist_ctx = {**base, "checks": checklist}
+    def _check_result(check: dict) -> str:
+        label = STATUS_LABEL.get(check.get("status", ""), check.get("status", ""))
+        notes = (check.get("notes") or "").strip()
+        return f"{label}\n{notes}" if notes else label
+
+    enriched_checks = [{**c, "result": _check_result(c)} for c in checklist]
+    checklist_ctx = {**base, "checks": enriched_checks}
 
     return {
         "01_title.docx": base,

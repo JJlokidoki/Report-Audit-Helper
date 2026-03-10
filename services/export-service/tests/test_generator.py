@@ -60,7 +60,9 @@ def test_build_contexts():
     ctx = _build_contexts(MOCK_REPORT, MOCK_SYSTEM_INFO, MOCK_SUMMARY, MOCK_CHECKLIST)
     assert ctx["01_title.docx"]["asName"] == "TestApp"
     assert ctx["04_test_results.docx"]["critical_count"] == 1
-    assert ctx["07_checklist.docx"]["checks"] == MOCK_CHECKLIST
+    checks = ctx["07_checklist.docx"]["checks"]
+    assert len(checks) == len(MOCK_CHECKLIST)
+    assert checks[0]["result"] == "Выполнено\nok"
 
 
 def test_vuln_context():

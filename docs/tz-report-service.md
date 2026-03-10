@@ -45,8 +45,6 @@
 |------|-----|----------|
 | id | int, PK | Идентификатор |
 | name | string, required | ФИО |
-| position | string | Должность |
-| organization | string | Организация |
 
 ### Software (справочник)
 | Поле | Тип | Описание |
@@ -173,7 +171,7 @@
 
 ### Справочники
 - `GET /api/executors` — список
-- `POST /api/executors` — создать `{ name, position, organization }`
+- `POST /api/executors` — создать `{ name }`
 - `PUT /api/executors/{id}` — обновить
 - `DELETE /api/executors/{id}` — удалить
 - `GET /api/software` — список

@@ -24,6 +24,7 @@
 | `/reports/:id/checklist` | ChecklistPage | Чеклист безопасности |
 | `/reports/:id/retests/autotests` | PlaceholderPage | Заглушка "В разработке" |
 | `/reports/:id/retests/launch` | PlaceholderPage | Заглушка "В разработке" |
+| `/settings` | SettingsPage | Управление справочниками (Исполнители, ПО) |
 
 ## Layout
 
@@ -51,17 +52,14 @@
 **2.2. Данные об объекте** *(поля TBD)*
 - Заглушка: текст "Поля будут добавлены позже"
 - Текущие поля формы сохраняются здесь: asName, keId, url, dateStart, dateEnd, segment, goal, testConditions (textarea)
-- Multi-select для Executor (из справочника + кнопка "Добавить нового")
+- Multi-select для Executor (выбор из справочника, управление — на странице Настройки)
 
 **2.3. Модель нарушителя** *(поля TBD)*
 - Заглушка: текст "Поля будут добавлены позже"
 - Текущие поля: qualificationLevel, accessLevel, knowledgeLevel
 
 **2.4. Используемое ПО**
-- Таблица: name + description
-- Combobox/multi-select из справочника Software (предзаполненные значения отмечены)
-- Возможность добавить своё ПО (name + description)
-- Предзаполненные записи (`is_preset=true`) нельзя удалить
+- Multi-select из справочника Software (управление — на странице Настройки)
 
 - Кнопка "Сохранить" → `PUT /api/reports/{id}/system-info`
 
@@ -95,6 +93,13 @@
 ### 7. PlaceholderPage
 - Компонент-заглушка для нереализованных разделов
 - По центру: иконка + текст "Раздел в разработке"
+
+### 8. SettingsPage (`/settings`)
+- Две секции (tabs или accordion):
+  - **Исполнители** — таблица с колонкой ФИО, кнопки добавления и удаления
+  - **Используемое ПО** — таблица name + description, кнопки добавления и удаления. Предзаполненные записи (`is_preset=true`) нельзя удалить
+- Inline-редактирование полей в таблице
+- Ссылка на страницу — в Navbar (иконка шестерёнки)
 
 ## Компоненты
 

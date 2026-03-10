@@ -31,6 +31,10 @@
 - [x] `tests/conftest.py` — fixtures (AsyncClient, in-memory SQLite)
 - [x] Integration-тесты: 23 теста — все эндпоинты (reports, vulnerabilities, system-info, checklist, executors, software)
 
+### 1.5 Доработки
+- [ ] Executor: убрать поля `position` и `organization` (оставить только `name`). Обновить модель, схемы, роутер, тесты
+- [ ] Software: добавить поле `description`, `is_preset`. Реализовать `preset_software.py`, предзаполнение при инициализации БД. Обновить модель, схемы, роутер, тесты
+
 ## Фаза 2: Frontend (базовый)
 
 ### 2.1 Инициализация
@@ -60,6 +64,8 @@
 - [x] `VulnerabilityEditPage` — форма редактирования (textarea-заглушки для TipTap)
 - [x] `ChecklistPage` — группировка по категориям, фильтры, автосохранение
 - [x] `PlaceholderPage` — заглушка "В разработке"
+- [ ] `SettingsPage` — управление справочниками (Исполнители, ПО): CRUD таблицы, ссылка в Navbar
+- [ ] `SystemInfoPage` — убрать кнопки добавления Executor/Software, оставить только multi-select из справочника
 
 ### 2.5 Компоненты
 - [x] `SeverityBadge` — цветной badge по severity
@@ -84,18 +90,18 @@
 
 ## Фаза 4: AI Vuln Generator
 
-- [ ] Создать `requirements.txt` (fastapi, uvicorn, ollama, openai, httpx, psutil)
-- [ ] Реализовать `providers/base.py` — LLMProvider ABC
-- [ ] Реализовать `providers/ollama.py` — OllamaProvider
-- [ ] Реализовать `providers/openai_compat.py` — OpenAICompatProvider
-- [ ] Реализовать `providers/__init__.py` — get_provider() factory
-- [ ] Реализовать `config.py` — конфигурация из env
-- [ ] Реализовать `prompts.py` — все промпты (из ai-report-service.py)
-- [ ] Реализовать `routers/generate.py` — генерация описания (sync + stream + killchain)
-- [ ] Реализовать `routers/checklist.py` — AI-генерация чеклиста
-- [ ] Реализовать `routers/summary.py` — генерация сводки
-- [ ] Unit-тесты: providers (mock LLM)
-- [ ] Integration-тесты: эндпоинты (mock provider)
+- [x] Создать `requirements.txt` (fastapi, uvicorn, ollama, openai, httpx, psutil)
+- [x] Реализовать `providers/base.py` — LLMProvider ABC
+- [x] Реализовать `providers/ollama.py` — OllamaProvider
+- [x] Реализовать `providers/openai_compat.py` — OpenAICompatProvider
+- [x] Реализовать `providers/__init__.py` — get_provider() factory
+- [x] Реализовать `config.py` — конфигурация из env
+- [x] Реализовать `prompts.py` — все промпты (из ai-report-service.py)
+- [x] Реализовать `routers/generate.py` — генерация описания (sync + stream + killchain)
+- [x] Реализовать `routers/checklist.py` — AI-генерация чеклиста
+- [x] Реализовать `routers/summary.py` — генерация сводки
+- [x] Unit-тесты: providers (mock LLM) — 7 тестов
+- [x] Integration-тесты: эндпоинты (mock provider) — 6 тестов
 
 ## Фаза 5: TestGen Service (заглушка)
 

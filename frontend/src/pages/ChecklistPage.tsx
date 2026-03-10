@@ -5,6 +5,12 @@ import { getChecklist, updateCheck } from "../api/reportApi";
 import type { SecurityCheck, CheckStatus } from "../types";
 
 const STATUS_OPTIONS: CheckStatus[] = ["passed", "failed", "not_applicable", "not_tested"];
+const STATUS_LABEL: Record<CheckStatus, string> = {
+  passed: "Выполнено",
+  failed: "Сломано",
+  not_applicable: "Не применимо",
+  not_tested: "Не выполнено",
+};
 const STATUS_CLASS: Record<CheckStatus, string> = {
   passed: "select-success",
   failed: "select-error",
@@ -70,9 +76,18 @@ function CheckRow({
 
   return (
     <tr>
-      <td className="font-mono text-sm">{check.check_id}</td>
+      <td className="font-mono text-sm whitespace-nowrap">{check.check_id}</td>
       <td>
         <span title={check.short_description ?? undefined}>{check.name}</span>
+      </td>
+      <td className="max-w-xs">
+        {check.goal ? (
+          <ul className="list-none space-y-0.5 text-xs text-base-content/70">
+            {check.goal.split("\n").map((line, i) => (
+              <li key={i}>{line}</li>
+            ))}
+          </ul>
+        ) : null}
       </td>
       <td>
         <select
@@ -81,7 +96,7 @@ function CheckRow({
           onChange={(e) => handleStatusChange(e.target.value as CheckStatus)}
         >
           {STATUS_OPTIONS.map((s) => (
-            <option key={s} value={s}>{s}</option>
+            <option key={s} value={s}>{STATUS_LABEL[s]}</option>
           ))}
         </select>
       </td>
@@ -150,7 +165,7 @@ export default function ChecklistPage() {
         >
           <option value="">Все</option>
           {STATUS_OPTIONS.map((s) => (
-            <option key={s} value={s}>{s}</option>
+            <option key={s} value={s}>{STATUS_LABEL[s]}</option>
           ))}
         </select>
       </div>
@@ -166,6 +181,7 @@ export default function ChecklistPage() {
                   <tr>
                     <th>ID</th>
                     <th>Название</th>
+                    <th>Задачи</th>
                     <th>Статус</th>
                     <th>Заметки</th>
                   </tr>

@@ -215,43 +215,45 @@ export default function ReportListPage() {
       {createModalOpen && (
         <dialog open className="modal modal-open">
           <div className="modal-box bg-base-200 border border-base-300 rounded-sm max-w-md">
-            <div className="flex items-center gap-2 mb-5">
+            <div className="flex items-center gap-2 mb-4">
               <span className="font-mono text-primary">›_</span>
               <h3 className="font-display font-semibold tracking-wide">Новый отчёт</h3>
             </div>
-            <div className="form-control mb-3">
-              <label className="label py-1">
-                <span className="label-text font-mono text-xs text-base-content/50 tracking-wider uppercase">
-                  Название
-                </span>
-              </label>
-              <input
-                type="text"
-                className="input input-bordered font-sans"
-                value={createName}
-                onChange={(e) => setCreateName(e.target.value)}
-                placeholder="Название проекта"
-                autoFocus
-                onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-              />
-            </div>
-            <div className="form-control mb-5">
-              <label className="label py-1">
-                <span className="label-text font-mono text-xs text-base-content/50 tracking-wider uppercase">
-                  Тип
-                </span>
-              </label>
-              <select
-                className="select select-bordered font-mono"
-                value={createType}
-                onChange={(e) => setCreateType(e.target.value as ReportType)}
-              >
-                {REPORT_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {TYPE_LABELS[t]}
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-3 gap-x-3 gap-y-3 mb-5">
+              <div className="form-control col-span-2">
+                <label className="label py-1">
+                  <span className="label-text font-mono text-xs text-base-content/50 tracking-wider uppercase">
+                    Название
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  className="input input-bordered w-full"
+                  value={createName}
+                  onChange={(e) => setCreateName(e.target.value)}
+                  placeholder="Название проекта"
+                  autoFocus
+                  onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+                />
+              </div>
+              <div className="form-control">
+                <label className="label py-1">
+                  <span className="label-text font-mono text-xs text-base-content/50 tracking-wider uppercase">
+                    Тип
+                  </span>
+                </label>
+                <select
+                  className="select select-bordered w-full font-mono"
+                  value={createType}
+                  onChange={(e) => setCreateType(e.target.value as ReportType)}
+                >
+                  {REPORT_TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {TYPE_LABELS[t]}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div className="modal-action gap-2">
               <button

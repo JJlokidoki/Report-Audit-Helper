@@ -1,0 +1,32 @@
+---
+description: Конвенции AI Vuln Generator — AI-генерация описаний уязвимостей
+globs: services/ai-vuln-generator/**
+alwaysApply: false
+---
+
+# AI Vuln Generator
+
+## Стек
+- FastAPI, ollama SDK, openai SDK, httpx
+- Порт 8004, источник: рефакторинг `ai-report-service.py`
+
+## Абстракция LLM
+- `providers/base.py` — `LLMProvider` (ABC): `chat()`, `stream()`, `supports_vision`
+- `providers/ollama.py` — OllamaProvider (локальный Ollama)
+- `providers/openai_compat.py` — OpenAICompatProvider (OpenAI, Azure, Anthropic)
+- `providers/__init__.py` — `get_provider()` factory по env `LLM_PROVIDER`
+- Новые провайдеры: наследовать `LLMProvider`, зарегистрировать в factory
+
+## Конфигурация (env)
+- `LLM_PROVIDER`: ollama / openai / custom
+- `LLM_MODEL`, `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_TEMPERATURE`, `LLM_MAX_TOKENS`
+
+## Промпты (`prompts.py`)
+- Хранить промпты как константы, не хардкодить в роутерах
+- Каждый промпт — отдельная переменная (SYSTEM_PROMPT, KILLCHAIN_PROMPT, WSTG_PROMPT, SUMMARY_PROMPT)
+
+## Стриминг
+- `POST /api/ai/generate/stream` → `StreamingResponse(media_type="text/plain")`
+- Токены отправляются по мере генерации
+
+## ТЗ: `docs/tz-ai-vuln-generator.md`

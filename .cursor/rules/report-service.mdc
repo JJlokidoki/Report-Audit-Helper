@@ -1,0 +1,26 @@
+---
+description: Конвенции Report Service — CRUD отчётов, модели, БД
+globs: services/report-service/**
+alwaysApply: false
+---
+
+# Report Service
+
+## Стек
+- FastAPI, SQLAlchemy (async), aiosqlite, Pydantic v2
+- Порт 8001, БД: `report.db` (SQLite)
+
+## Структура
+- `models.py` — SQLAlchemy модели (Report, SystemInfo, Vulnerability, SecurityCheck, Executor, Software, AutoTest, TestRun, TestRunResult, RetestResult)
+- `schemas.py` — Pydantic схемы (Create/Update/Response для каждой модели)
+- `checklist_data.py` — предзаполненные данные чеклистов (WSTG: 91 пункт, остальные — заглушки)
+- `routers/` — отдельный файл на каждую группу эндпоинтов
+
+## Паттерны
+- Каждый роутер: `router = APIRouter(prefix="/api/...", tags=[...])`
+- Dependency injection для сессии: `db: AsyncSession = Depends(get_db)`
+- HTTP 404 если ресурс не найден, 422 для валидации
+- При создании Report автоматически создавать SecurityCheck из checklist_data.py
+- Каскадное удаление через SQLAlchemy relationships (cascade="all, delete-orphan")
+
+## ТЗ: `docs/tz-report-service.md`

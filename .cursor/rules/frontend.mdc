@@ -1,0 +1,39 @@
+---
+description: Конвенции Frontend — React SPA
+globs: frontend/**
+alwaysApply: false
+---
+
+# Frontend
+
+## Стек
+- React 18, TypeScript strict, Vite
+- DaisyUI + Tailwind CSS, тема: `corporate`
+- React Router v6, TanStack Query, Axios
+- TipTap (WYSIWYG), TanStack Table, dnd-kit, react-hot-toast
+
+## Структура
+- `api/` — axios клиенты (reportApi, exportApi, aiApi)
+- `components/layout/` — Layout, Navbar, Sidebar
+- `components/report/` — формы и таблицы отчёта
+- `components/common/` — переиспользуемые (RichEditor, PlaceholderPage, badges)
+- `components/ai/` — AIGenerateModal
+- `pages/` — страницы для роутера
+- `types/index.ts` — все TypeScript интерфейсы
+
+## Паттерны
+- Все API-запросы через TanStack Query (useQuery/useMutation)
+- Env переменные: `VITE_REPORT_API_URL`, `VITE_EXPORT_API_URL`, `VITE_AI_API_URL`
+- Нереализованные вкладки → компонент `PlaceholderPage`
+- Формы: controlled components, сохранение по кнопке
+- Чеклист: автосохранение при изменении status/notes
+- Язык интерфейса: русский
+
+## DaisyUI компоненты
+- Таблицы: `table`, `table-zebra`
+- Кнопки: `btn`, `btn-primary`, `btn-ghost`
+- Формы: `input`, `select`, `textarea` с `form-control` + `label`
+- Модалки: `modal` + `modal-box`
+- Навигация: `navbar`, `menu`
+
+## ТЗ: `docs/tz-frontend.md`

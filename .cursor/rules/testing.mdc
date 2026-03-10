@@ -1,0 +1,66 @@
+---
+description: Конвенции тестирования — unit и integration тесты
+globs: "**/tests/**"
+alwaysApply: false
+---
+
+# Тестирование
+
+## Backend (Python)
+
+### Фреймворк
+- pytest + pytest-asyncio + httpx (AsyncClient)
+
+### Структура
+- Каждый сервис: `tests/conftest.py` + `test_*.py`
+- conftest.py: фикстуры `test_client`, `test_db` (in-memory SQLite)
+
+### Unit-тесты
+- Тестировать бизнес-логику изолированно
+- Mock внешних зависимостей (LLM, HTTP-клиенты)
+- Проверять Pydantic-схемы валидации
+
+### Integration-тесты
+- Использовать `AsyncClient` из httpx с `app` напрямую (без запуска сервера)
+- Тестировать полный цикл: запрос → роутер → БД → ответ
+- Для Report Service: in-memory SQLite
+- Для Export/AI/TestGen: mock Report Service API через `respx` или fixture
+
+### Паттерн теста
+```python
+@pytest.mark.asyncio
+async def test_create_report(test_client: AsyncClient):
+    response = await test_client.post("/api/reports", json={"name": "Test", "report_type": "web"})
+    assert response.status_code == 201
+    data = response.json()
+    assert data["name"] == "Test"
+    assert data["report_type"] == "web"
+```
+
+### Именование
+- `test_<action>_<entity>[_<condition>]` — `test_create_report`, `test_delete_report_not_found`
+
+## Frontend (TypeScript)
+
+### Фреймворк
+- Vitest + React Testing Library + MSW (Mock Service Worker)
+
+### Структура
+- Тесты рядом с компонентами: `ComponentName.test.tsx`
+- Или в `__tests__/` папке
+
+### Unit-тесты
+- Тестировать рендеринг компонентов
+- Тестировать обработку событий (клики, ввод)
+- Mock API через MSW
+
+### Паттерн теста
+```typescript
+import { render, screen } from '@testing-library/react';
+import { SeverityBadge } from './SeverityBadge';
+
+test('renders critical severity', () => {
+  render(<SeverityBadge severity="critical" />);
+  expect(screen.getByText('critical')).toHaveClass('badge-error');
+});
+```

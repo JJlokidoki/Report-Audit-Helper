@@ -1,0 +1,17 @@
+---
+description: Конвенции Retest Service — заглушка для ретестов
+globs: services/retest-service/**
+alwaysApply: false
+---
+
+# Retest Service
+
+## Стек
+- FastAPI, порт 8003
+- Статус: полная заглушка
+
+## Эндпоинты (stub)
+- `GET /api/retests/{report_id}/autotests` → `{ message: "Not implemented", autotests: [] }`
+- `POST /api/retests/{report_id}/launch` → `{ message: "Not implemented", status: "stub" }`
+
+## ТЗ: `docs/tz-retest-service.md`

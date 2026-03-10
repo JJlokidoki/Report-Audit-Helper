@@ -1,0 +1,40 @@
+---
+description: Общие конвенции проекта Pentest Audit Helper
+alwaysApply: true
+---
+
+# Pentest Audit Helper — Конвенции
+
+## Архитектура
+- Микросервисы на FastAPI (Python 3.11+), каждый — отдельный процесс
+- Frontend: React 18 + TypeScript + Vite + DaisyUI (тема corporate)
+- БД: SQLite через SQLAlchemy ORM
+- API формат: JSON (application/json)
+
+## Порты сервисов
+- Report Service: 8001
+- Export Service: 8002
+- Retest Service: 8003
+- AI Vuln Generator: 8004
+- TestGen Service: 8005
+- Frontend dev: 5173
+
+## Межсервисное взаимодействие
+- Сервисы общаются через HTTP API (httpx)
+- Report Service — единственный сервис с доступом к БД
+- Остальные сервисы получают данные через Report Service API
+
+## Стиль кода
+- Python: PEP 8, type hints обязательны, Pydantic для валидации
+- TypeScript: strict mode, интерфейсы в `types/index.ts`
+- Минимум комментариев — только для неочевидной логики
+- Меньше кода — лучше
+
+## Тесты
+- Backend: pytest, фикстуры в conftest.py, in-memory SQLite для тестов
+- Frontend: Vitest + React Testing Library
+- Каждый сервис имеет папку `tests/`
+
+## ТЗ
+- Документация сервисов: `docs/tz-*.md`
+- Task list: `docs/task-list.md`

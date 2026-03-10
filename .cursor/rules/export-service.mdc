@@ -1,0 +1,26 @@
+---
+description: Конвенции Export Service — генерация Word-отчётов
+globs: services/export-service/**
+alwaysApply: false
+---
+
+# Export Service
+
+## Стек
+- FastAPI, docxtpl, docxcompose, python-docx, httpx
+- Порт 8002
+
+## Процесс генерации
+1. Получить данные из Report Service API (httpx)
+2. Определить `report_type` → папка шаблонов `templates/{report_type}/`
+3. Заполнить каждый шаблон через `docxtpl` (Jinja2 синтаксис)
+4. Шаблон `05_vulnerability.docx` заполняется N раз (по числу уязвимостей)
+5. Склеить через `docxcompose.Composer` в порядке: title → toc → general_info → test_results → vulnerabilities → threat_classification → checklist
+6. Вернуть StreamingResponse (не сохранять на диск)
+
+## Файлы
+- `filler.py` — `fill_template(path, context) -> BytesIO`
+- `generator.py` — оркестрация полного цикла
+- `templates/{web,ios,android,ai,iot}/` — по 7 шаблонов в каждой папке
+
+## ТЗ: `docs/tz-export-service.md`

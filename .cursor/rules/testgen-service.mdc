@@ -1,0 +1,23 @@
+---
+description: Конвенции TestGen Service — AI-генерация автотестов
+globs: services/testgen-service/**
+alwaysApply: false
+---
+
+# TestGen Service
+
+## Стек
+- FastAPI, порт 8005
+- Статус: заглушка с базовой структурой
+
+## Назначение
+- Генерация Python-скриптов для автоматической проверки уязвимостей
+- Данные уязвимости получает из Report Service API
+- Результат сохраняется в AutoTest (script_type + script_content)
+
+## Эндпоинты
+- `POST /api/testgen/generate` — генерация одного скрипта
+- `POST /api/testgen/generate/stream` — потоковая генерация
+- `POST /api/testgen/generate/batch` — batch для всех уязвимостей отчёта
+
+## ТЗ: `docs/tz-testgen-service.md`

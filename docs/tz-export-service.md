@@ -62,6 +62,13 @@
 
 Результат → `StreamingResponse` без сохранения на диск.
 
+### Конвертация Rich Text (html_to_docx.py)
+Поля с WYSIWYG-контентом (description, bug_description, reproduction_steps, remediation) хранятся как HTML. Перед подстановкой в шаблон требуется конвертация:
+- Парсинг HTML через `beautifulsoup4`
+- Текстовые блоки (`<p>`, `<ul>`, `<strong>` и т.д.) → `RichText` (docxtpl)
+- Изображения `<img src="data:image/...;base64,...">` → `InlineImage` (docxtpl, декодирование base64 в BytesIO)
+- Если поле содержит plain text (без HTML-тегов) — подставляется как обычная строка
+
 ## Структура файлов
 
 ```
@@ -70,6 +77,7 @@ services/export-service/
 │   ├── main.py          # FastAPI app, CORS, auth_stub
 │   ├── generator.py     # оркестрация: получение данных → fill → merge
 │   ├── filler.py        # fill_template(path, context) → BytesIO
+│   ├── html_to_docx.py  # HTML → RichText/InlineImage конвертер
 │   └── config.py        # REPORT_SERVICE_URL, TEMPLATE_DIR
 ├── templates/
 │   ├── web/

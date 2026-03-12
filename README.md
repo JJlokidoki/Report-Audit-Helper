@@ -111,4 +111,6 @@ npm test
 VITE_REPORT_API_URL=http://127.0.0.1:8001/api
 VITE_EXPORT_API_URL=http://127.0.0.1:8002
 VITE_AI_API_URL=http://127.0.0.1:8004
+# Включить TipTap rich-editor (поддержка вставки скриншотов):
+VITE_USE_RICH_EDITOR=true
 ```

@@ -67,6 +67,7 @@ class SystemInfo(Base):
     dateStart: Mapped[date | None] = mapped_column(Date, nullable=True)
     dateEnd: Mapped[date | None] = mapped_column(Date, nullable=True)
     segment: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     goal: Mapped[str | None] = mapped_column(String(500), nullable=True)
     qualificationLevel: Mapped[str | None] = mapped_column(String(255), nullable=True)
     accessLevel: Mapped[str | None] = mapped_column(String(255), nullable=True)

@@ -70,13 +70,16 @@
 ### 2.5 Компоненты
 - [x] `SeverityBadge` — цветной badge по severity
 - [x] `AutomationBadge` — badge по automation_level
-- [ ] `RichEditor` — обёртка TipTap (Фаза 7)
+- [x] `RichEditor` — обёртка TipTap с расширением Image (paste + drag-n-drop скриншотов). Переключение на plain textarea через фича-флаг (env `VITE_USE_RICH_EDITOR=true` или prop `useRichEditor`). Применить в: `SystemInfoPage` → поле description; `VulnerabilityEditPage` → bug_description, reproduction_steps, remediation
 - [x] `ConfirmModal` — модалка подтверждения
 - [x] `AIGenerateModal` — модалка AI-генерации (чат, стриминг, парсинг, применение)
 
 ### 2.6 Тесты Frontend
 - [ ] Unit-тесты компонентов (Vitest + React Testing Library)
 - [ ] Тесты API-клиентов (mock axios)
+
+### 2.7 Доработки
+- [ ] Добавить `html_to_docx.py` в Export Service — конвертация HTML (из TipTap) в docx-элементы: текст → `RichText`, `<img src="data:base64,...">` → `InlineImage` (docxtpl). Зависимости: `beautifulsoup4`. Применить в filler.py для полей с rich text (description, bug_description, reproduction_steps, remediation)
 
 ## Фаза 3: Export Service
 

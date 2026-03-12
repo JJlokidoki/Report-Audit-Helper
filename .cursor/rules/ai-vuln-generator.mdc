@@ -13,13 +13,14 @@ alwaysApply: false
 ## Абстракция LLM
 - `providers/base.py` — `LLMProvider` (ABC): `chat()`, `stream()`, `supports_vision`
 - `providers/ollama.py` — OllamaProvider (локальный Ollama)
-- `providers/openai_compat.py` — OpenAICompatProvider (OpenAI, Azure, Anthropic)
+- `providers/openai_compat.py` — OpenAICompatProvider (OpenAI, Azure, Anthropic, LM Studio)
 - `providers/__init__.py` — `get_provider()` factory по env `LLM_PROVIDER`
 - Новые провайдеры: наследовать `LLMProvider`, зарегистрировать в factory
 
 ## Конфигурация (env)
-- `LLM_PROVIDER`: ollama / openai / custom
+- `LLM_PROVIDER`: ollama / openai / custom (для LM Studio — openai или custom)
 - `LLM_MODEL`, `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_TEMPERATURE`, `LLM_MAX_TOKENS`
+- LM Studio: `LLM_PROVIDER=openai` `LLM_BASE_URL=http://localhost:1234/v1` `LLM_MODEL=<имя модели в LM Studio>` (API key можно пустой)
 
 ## Промпты (`prompts.py`)
 - Хранить промпты как константы, не хардкодить в роутерах

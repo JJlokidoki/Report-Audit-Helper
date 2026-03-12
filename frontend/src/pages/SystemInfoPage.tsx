@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import RichEditor from "../components/common/RichEditor";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -35,6 +36,7 @@ type FormState = Pick<
   | "dateStart"
   | "dateEnd"
   | "segment"
+  | "description"
   | "goal"
   | "testConditions"
   | "qualificationLevel"
@@ -56,6 +58,7 @@ export default function SystemInfoPage() {
     dateStart: null,
     dateEnd: null,
     segment: null,
+    description: null,
     goal: null,
     testConditions: null,
     qualificationLevel: null,
@@ -90,6 +93,7 @@ export default function SystemInfoPage() {
       dateStart: systemInfo.dateStart,
       dateEnd: systemInfo.dateEnd,
       segment: systemInfo.segment,
+      description: systemInfo.description,
       goal: systemInfo.goal,
       testConditions: systemInfo.testConditions,
       qualificationLevel: systemInfo.qualificationLevel,
@@ -156,8 +160,12 @@ export default function SystemInfoPage() {
       <div className="collapse collapse-arrow bg-base-200">
         <input type="checkbox" defaultChecked />
         <div className="collapse-title font-medium">Описание</div>
-        <div className="collapse-content">
-          <p className="text-base-content/50 text-sm font-mono">// будет добавлен WYSIWYG редактор</p>
+        <div className="collapse-content pt-2">
+          <RichEditor
+            value={form.description}
+            onChange={(v) => updateForm("description", v)}
+            placeholder="Общее описание объекта тестирования..."
+          />
         </div>
       </div>
 
@@ -196,11 +204,11 @@ export default function SystemInfoPage() {
 
             <div className="form-control col-span-3">
               <label className="label py-1"><span className="label-text">Цель тестирования</span></label>
-              <textarea className="textarea textarea-bordered w-full" rows={2} value={form.goal ?? ""} onChange={(e) => updateForm("goal", e.target.value || null)} />
+              <RichEditor value={form.goal} onChange={(v) => updateForm("goal", v)} rows={2} placeholder="Цель тестирования" />
             </div>
             <div className="form-control col-span-3">
               <label className="label py-1"><span className="label-text">Условия тестирования</span></label>
-              <textarea className="textarea textarea-bordered w-full" rows={2} value={form.testConditions ?? ""} onChange={(e) => updateForm("testConditions", e.target.value || null)} />
+              <RichEditor value={form.testConditions} onChange={(v) => updateForm("testConditions", v)} rows={2} placeholder="Условия тестирования" />
             </div>
 
             <div className="form-control col-span-3">

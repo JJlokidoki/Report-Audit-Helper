@@ -66,9 +66,12 @@ class LLMProvider(ABC):
 - `LLM_PROVIDER` — `ollama` (default) / `openai` / `custom`
 - `LLM_MODEL` — имя модели (default: `gemma3:27b-it-qat`)
 - `LLM_BASE_URL` — URL API (default: `http://localhost:11434`)
-- `LLM_API_KEY` — API-ключ (пустой для Ollama)
+- `LLM_API_KEY` — API-ключ (пустой для Ollama и LM Studio)
 - `LLM_TEMPERATURE` — default: `0.1`
 - `LLM_MAX_TOKENS` — default: `2048`
+
+**LM Studio:** запустить модель в LM Studio, включить "Local Server". Затем:
+`LLM_PROVIDER=openai` `LLM_BASE_URL=http://localhost:1234/v1` `LLM_MODEL=<имя модели из LM Studio>` (например `local-model` или как отображается в UI).
 
 ## Структура файлов
 

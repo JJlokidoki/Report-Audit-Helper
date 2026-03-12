@@ -27,6 +27,7 @@ export interface SystemInfo {
   dateStart: string | null;
   dateEnd: string | null;
   segment: string | null;
+  description: string | null;
   goal: string | null;
   qualificationLevel: string | null;
   accessLevel: string | null;

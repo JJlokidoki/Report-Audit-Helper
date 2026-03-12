@@ -68,6 +68,7 @@ class SystemInfoUpdate(BaseModel):
     dateStart: date | None = None
     dateEnd: date | None = None
     segment: str | None = None
+    description: str | None = None
     goal: str | None = None
     qualificationLevel: str | None = None
     accessLevel: str | None = None
@@ -86,6 +87,7 @@ class SystemInfoResponse(BaseModel):
     dateStart: date | None
     dateEnd: date | None
     segment: str | None
+    description: str | None
     goal: str | None
     qualificationLevel: str | None
     accessLevel: str | None

@@ -5,6 +5,7 @@ from io import BytesIO
 from pathlib import Path
 
 from bs4 import BeautifulSoup, NavigableString, Tag
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 from docx.shared import Cm
 from docxtpl import DocxTemplate
@@ -88,6 +89,19 @@ def _extract_base64_images(html: str) -> tuple[str, list[Path]]:
     return str(soup), tmp_files
 
 
+_ALIGN_MAP = {
+    "center": WD_ALIGN_PARAGRAPH.CENTER,
+    "right": WD_ALIGN_PARAGRAPH.RIGHT,
+    "justify": WD_ALIGN_PARAGRAPH.JUSTIFY,
+}
+
+
+def _get_alignment(tag: Tag) -> WD_ALIGN_PARAGRAPH | None:
+    style = tag.get("style", "")
+    m = re.search(r"text-align:\s*(\w+)", style)
+    return _ALIGN_MAP.get(m.group(1)) if m else None
+
+
 def _add_inline(paragraph, node: Tag, **extra_fmt) -> None:
     """Рекурсивно добавляет inline-контент (bold/italic/text) в параграф."""
     for child in node.children:
@@ -134,6 +148,20 @@ def _fix_subdoc_images(sub, tpl: DocxTemplate) -> None:
             blip.set(qn("r:embed"), rid_map[old])
 
 
+def _add_block_image(
+    doc, img_tag: Tag, parent_align: WD_ALIGN_PARAGRAPH | None = None
+) -> None:
+    """Вставляет <img> как отдельный параграф с выравниванием."""
+    src = img_tag.get("src", "")
+    if not (src and Path(src).exists()):
+        return
+    width = _get_capped_width(src)
+    doc.add_picture(src, width=width)
+    doc.paragraphs[-1].alignment = (
+        parent_align or _get_alignment(img_tag) or WD_ALIGN_PARAGRAPH.CENTER
+    )
+
+
 def _get_capped_width(image_path: str) -> Cm | None:
     """Ширина для изображения, ограниченная MAX_IMAGE_WIDTH."""
     try:
@@ -177,16 +205,21 @@ def html_to_subdoc(html: str | None, tpl: DocxTemplate):
                 return
 
             if elem.name in ("p", "div", "h1", "h2", "h3", "h4"):
-                p = doc.add_paragraph()
-                _add_inline(p, elem)
+                align = _get_alignment(elem)
+                inner_img = elem.find("img")
+                if inner_img:
+                    _add_block_image(doc, inner_img, align)
+                else:
+                    p = doc.add_paragraph()
+                    p.alignment = align
+                    _add_inline(p, elem)
             elif elem.name == "img":
-                src = elem.get("src", "")
-                if src and Path(src).exists():
-                    width = _get_capped_width(src)
-                    doc.add_picture(src, width=width)
+                _add_block_image(doc, elem)
             elif elem.name in ("ul", "ol"):
+                align = _get_alignment(elem)
                 for li in elem.find_all("li", recursive=False):
                     p = doc.add_paragraph()
+                    p.alignment = _get_alignment(li) or align
                     p.add_run("• ")
                     _add_inline(p, li)
             else:

@@ -46,6 +46,7 @@ def _build_contexts(report: dict, system_info: dict, summary: dict, checklist: l
     base = {
         "report_name": report.get("name", ""),
         "report_type": report.get("report_type", ""),
+        "description": system_info.get("description") or "",
         "asName": system_info.get("asName") or "",
         "keId": system_info.get("keId") or "",
         "url": system_info.get("url") or "",
@@ -59,7 +60,7 @@ def _build_contexts(report: dict, system_info: dict, summary: dict, checklist: l
         "testConditions": system_info.get("testConditions") or "",
         "executors": executors_str,
         "executors_list": system_info.get("executors", []),
-        "software_list": software_list,
+        "software": software_list,
     }
 
     test_results = {

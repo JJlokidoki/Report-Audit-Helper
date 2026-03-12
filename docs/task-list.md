@@ -79,7 +79,7 @@
 - [ ] Тесты API-клиентов (mock axios)
 
 ### 2.7 Доработки
-- [ ] Добавить `html_to_docx.py` в Export Service — конвертация HTML (из TipTap) в docx-элементы: текст → `RichText`, `<img src="data:base64,...">` → `InlineImage` (docxtpl). Зависимости: `beautifulsoup4`. Применить в filler.py для полей с rich text (description, bug_description, reproduction_steps, remediation)
+- [x] Добавить `html_to_docx.py` в Export Service — конвертация HTML (из TipTap) в docx-элементы: текст → `RichText`, `<img src="data:base64,...">` → `InlineImage` (docxtpl). Зависимости: `beautifulsoup4`. Применить в filler.py для полей с rich text (description, bug_description, reproduction_steps, remediation)
 
 ## Фаза 3: Export Service
 

@@ -5,6 +5,8 @@ docxcompose
 python-docx
 httpx
 pydantic-settings
+beautifulsoup4
+htmldocx
 pytest
 pytest-asyncio
 respx

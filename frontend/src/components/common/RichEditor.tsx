@@ -228,9 +228,9 @@ function TipTapEditor({ value, onChange, placeholder, className }: Omit<Props, "
     if (!editor) return;
     const current = editor.isEmpty ? null : editor.getHTML();
     if (current !== value) {
-      editor.commands.setContent(value || "");
+      editor.commands.setContent(value || "", false);
     }
-  }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [editor, value]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div

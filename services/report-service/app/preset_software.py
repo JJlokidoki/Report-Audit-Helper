@@ -9,16 +9,12 @@ PRESET_TOOLS = [
     {"name": "Metasploit Framework", "description": "Фреймворк для эксплуатации уязвимостей"},
     {"name": "SQLMap", "description": "Автоматизированный инструмент для SQL-инъекций"},
     {"name": "Nikto", "description": "Сканер веб-серверов"},
-    {"name": "OWASP ZAP", "description": "Сканер веб-приложений"},
     {"name": "Gobuster", "description": "Перебор директорий и поддоменов"},
     {"name": "Hydra", "description": "Инструмент для брутфорса аутентификации"},
     {"name": "John the Ripper", "description": "Взлом хешей паролей"},
     {"name": "Wireshark", "description": "Анализатор сетевого трафика"},
-    {"name": "Nessus", "description": "Сканер уязвимостей инфраструктуры"},
     {"name": "Nuclei", "description": "Шаблонный сканер уязвимостей"},
     {"name": "ffuf", "description": "Фаззер веб-директорий и параметров"},
-    {"name": "Impacket", "description": "Набор инструментов для работы с сетевыми протоколами"},
-    {"name": "BloodHound", "description": "Анализ путей атаки в Active Directory"},
 ]
 
 

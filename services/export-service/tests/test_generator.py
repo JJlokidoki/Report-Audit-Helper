@@ -6,7 +6,13 @@ from pathlib import Path
 from docx import Document
 
 from app import generator as gen_module
-from app.generator import generate_report, _merge_docs, _build_contexts, _vuln_context
+from app.generator import (
+    SEVERITY_ORDER,
+    _build_contexts,
+    _merge_docs,
+    _vuln_context,
+    generate_report,
+)
 from app.config import settings
 
 
@@ -124,3 +130,138 @@ async def test_generate_report_no_templates(tmp_path: Path, monkeypatch):
 
         with pytest.raises(FileNotFoundError):
             await generate_report(1)
+
+
+# ── _vuln_context ──────────────────────────────────────────────────────────────
+
+def test_vuln_context_is_first_true():
+    ctx = _vuln_context(MOCK_SUMMARY["vulnerabilities"][0], is_first=True)
+    assert ctx["is_first"] is True
+
+
+def test_vuln_context_is_first_false():
+    ctx = _vuln_context(MOCK_SUMMARY["vulnerabilities"][0], is_first=False)
+    assert ctx["is_first"] is False
+
+
+def test_vuln_context_is_first_default():
+    """По умолчанию is_first=False."""
+    ctx = _vuln_context(MOCK_SUMMARY["vulnerabilities"][0])
+    assert ctx["is_first"] is False
+
+
+# ── Severity ordering ──────────────────────────────────────────────────────────
+
+def test_severity_order_critical_before_high():
+    assert SEVERITY_ORDER["critical"] < SEVERITY_ORDER["high"]
+
+
+def test_build_contexts_vuln_sorting():
+    """Уязвимости в summary.vulnerabilities отсортированы при генерации."""
+    vulns = MOCK_SUMMARY["vulnerabilities"]
+    sorted_vulns = sorted(
+        vulns, key=lambda v: SEVERITY_ORDER.get(v.get("bug_criticality", "info"), 99)
+    )
+    assert sorted_vulns[0]["bug_criticality"] == "critical"
+    assert sorted_vulns[1]["bug_criticality"] == "medium"
+
+
+# ── generate_report — vulnerability content ───────────────────────────────────
+
+@pytest.fixture
+def vuln_templates(tmp_path: Path):
+    """Шаблоны: 04 + 05 с маркером is_first и именем уязвимости."""
+    template_dir = tmp_path / "web"
+    template_dir.mkdir()
+    _make_template(template_dir, "04_test_results.docx", "{{ report_name }}")
+    # Шаблон уязвимости: заголовок только для первой, потом имя баги
+    _make_template(
+        template_dir,
+        "05_vulnerability.docx",
+        "{% if is_first %}SECTION_HEADER{% endif %} {{ bug_name }}",
+    )
+    return tmp_path
+
+
+@pytest.mark.asyncio
+async def test_generate_report_vuln_names_present(vuln_templates: Path, monkeypatch):
+    """Имена уязвимостей присутствуют в сгенерированном документе."""
+    monkeypatch.setattr(gen_module.settings, "template_dir", vuln_templates)
+    base_url = settings.report_service_url
+
+    with respx.mock:
+        respx.get(f"{base_url}/api/reports/1").mock(return_value=httpx.Response(200, json=MOCK_REPORT))
+        respx.get(f"{base_url}/api/reports/1/system-info").mock(return_value=httpx.Response(200, json=MOCK_SYSTEM_INFO))
+        respx.get(f"{base_url}/api/reports/1/test-summary").mock(return_value=httpx.Response(200, json=MOCK_SUMMARY))
+        respx.get(f"{base_url}/api/reports/1/checklist").mock(return_value=httpx.Response(200, json=MOCK_CHECKLIST))
+
+        result = await generate_report(1)
+
+    doc = Document(result)
+    full_text = " ".join(p.text for p in doc.paragraphs)
+    assert "XSS" in full_text
+    assert "SQLI" in full_text
+
+
+@pytest.mark.asyncio
+async def test_generate_report_is_first_header_once(vuln_templates: Path, monkeypatch):
+    """SECTION_HEADER рендерится ровно один раз — только для первой уязвимости."""
+    monkeypatch.setattr(gen_module.settings, "template_dir", vuln_templates)
+    base_url = settings.report_service_url
+
+    with respx.mock:
+        respx.get(f"{base_url}/api/reports/1").mock(return_value=httpx.Response(200, json=MOCK_REPORT))
+        respx.get(f"{base_url}/api/reports/1/system-info").mock(return_value=httpx.Response(200, json=MOCK_SYSTEM_INFO))
+        respx.get(f"{base_url}/api/reports/1/test-summary").mock(return_value=httpx.Response(200, json=MOCK_SUMMARY))
+        respx.get(f"{base_url}/api/reports/1/checklist").mock(return_value=httpx.Response(200, json=MOCK_CHECKLIST))
+
+        result = await generate_report(1)
+
+    doc = Document(result)
+    full_text = " ".join(p.text for p in doc.paragraphs)
+    assert full_text.count("SECTION_HEADER") == 1
+
+
+@pytest.mark.asyncio
+async def test_generate_report_no_vulns(tmp_path: Path, monkeypatch):
+    """Генерация без уязвимостей — шаблон 05 не используется."""
+    template_dir = tmp_path / "web"
+    template_dir.mkdir()
+    _make_template(template_dir, "04_test_results.docx", "{{ report_name }}")
+    _make_template(template_dir, "05_vulnerability.docx", "{{ bug_name }}")
+    monkeypatch.setattr(gen_module.settings, "template_dir", tmp_path)
+
+    summary_no_vulns = {**MOCK_SUMMARY, "vulnerabilities": []}
+    base_url = settings.report_service_url
+
+    with respx.mock:
+        respx.get(f"{base_url}/api/reports/1").mock(return_value=httpx.Response(200, json=MOCK_REPORT))
+        respx.get(f"{base_url}/api/reports/1/system-info").mock(return_value=httpx.Response(200, json=MOCK_SYSTEM_INFO))
+        respx.get(f"{base_url}/api/reports/1/test-summary").mock(return_value=httpx.Response(200, json=summary_no_vulns))
+        respx.get(f"{base_url}/api/reports/1/checklist").mock(return_value=httpx.Response(200, json=MOCK_CHECKLIST))
+
+        result = await generate_report(1)
+
+    doc = Document(result)
+    full_text = " ".join(p.text for p in doc.paragraphs)
+    assert "XSS" not in full_text
+    assert "SQLI" not in full_text
+
+
+@pytest.mark.asyncio
+async def test_generate_report_vuln_severity_order(vuln_templates: Path, monkeypatch):
+    """Critical уязвимость идёт раньше medium в итоговом документе."""
+    monkeypatch.setattr(gen_module.settings, "template_dir", vuln_templates)
+    base_url = settings.report_service_url
+
+    with respx.mock:
+        respx.get(f"{base_url}/api/reports/1").mock(return_value=httpx.Response(200, json=MOCK_REPORT))
+        respx.get(f"{base_url}/api/reports/1/system-info").mock(return_value=httpx.Response(200, json=MOCK_SYSTEM_INFO))
+        respx.get(f"{base_url}/api/reports/1/test-summary").mock(return_value=httpx.Response(200, json=MOCK_SUMMARY))
+        respx.get(f"{base_url}/api/reports/1/checklist").mock(return_value=httpx.Response(200, json=MOCK_CHECKLIST))
+
+        result = await generate_report(1)
+
+    doc = Document(result)
+    full_text = " ".join(p.text for p in doc.paragraphs)
+    assert full_text.index("XSS") < full_text.index("SQLI")

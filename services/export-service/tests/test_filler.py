@@ -4,7 +4,7 @@ from pathlib import Path
 from docx import Document
 
 from app.filler import fill_template
-from app.html_to_docx import RICH_TEXT_FIELDS, is_html
+from app.html_to_docx import RICH_TEXT_FIELDS, enrich_context_with_subdoc
 
 
 def test_fill_template_replaces_placeholder(simple_template: Path):
@@ -42,15 +42,22 @@ def test_fill_template_html_plain_text(tmp_path: Path):
 
 
 def test_fill_template_html_subdoc(tmp_path: Path):
-    """{{p field_doc }} рендерит HTML как Subdoc с форматированием."""
+    """{{p field_doc }} рендерит HTML как Subdoc — через enrich_context_with_subdoc."""
+    from docxtpl import DocxTemplate
+
     d = Document()
     d.add_paragraph("{{p bug_description_doc }}")
     path = tmp_path / "vuln_rich.docx"
     d.save(str(path))
 
-    result = fill_template(path, {"bug_description": "<p>Hello <b>World</b></p>"})
-    assert isinstance(result, BytesIO)
-    doc = Document(result)
+    tpl = DocxTemplate(str(path))
+    ctx = enrich_context_with_subdoc({"bug_description": "<p>Hello <b>World</b></p>"}, tpl)
+    tpl.render(ctx)
+    out = BytesIO()
+    tpl.save(out)
+    out.seek(0)
+
+    doc = Document(out)
     full_text = " ".join(p.text for p in doc.paragraphs)
     assert "Hello" in full_text
 

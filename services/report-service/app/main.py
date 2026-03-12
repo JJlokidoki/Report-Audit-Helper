@@ -8,10 +8,11 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import engine, init_db
+from app.log import setup_logging
 from app.preset_software import seed_preset_software
 from app.routers import reports, system_info, vulnerabilities, checklist, executors, software
 
-logger = logging.getLogger("report-service")
+logger = logging.getLogger(__name__)
 
 
 async def _migrate(conn) -> None:
@@ -28,6 +29,8 @@ async def _migrate(conn) -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    setup_logging()
+    logger.info("Report Service started")
     await init_db()
     async with engine.begin() as conn:
         await _migrate(conn)
@@ -48,9 +51,10 @@ app.add_middleware(
 
 
 @app.middleware("http")
-async def auth_stub(request: Request, call_next):
-    logger.warning("Auth not implemented")
-    return await call_next(request)
+async def log_requests(request: Request, call_next):
+    response = await call_next(request)
+    logger.debug("%s %s -> %d", request.method, request.url.path, response.status_code)
+    return response
 
 
 app.include_router(reports.router)

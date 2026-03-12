@@ -27,7 +27,7 @@
 | `02_toc.docx` | Оглавление | Статичный или авто-генерация |
 | `03_general_info.docx` | Общие сведения | Все поля SystemInfo |
 | `04_test_results.docx` | Результаты тестирования | `{{ critical_count }}`, `{{ high_count }}`, `{{ medium_count }}`, `{{ low_count }}`, `{{ info_count }}` |
-| `05_vulnerability.docx` | Описание уязвимости (×N) | `{{ bug_name }}`, `{{ bug_criticality }}`, `{{ cvss_score }}`, `{{ cvss_vector }}`, `{{ bug_description }}`, `{{ reproduction_steps }}`, `{{ remediation }}` |
+| `05_vulnerability.docx` | Описание уязвимости (×N) | `{{ bug_name }}`, `{{ bug_criticality }}`, `{{ cvss_score }}`, `{{ cvss_vector }}`, `{{ bug_description }}`, `{{ reproduction_steps }}`, `{{ remediation }}`, `{{ is_first }}`. Заголовок "Описание результатов тестирования" обёрнут в `{% if is_first %}...{% endif %}` — отображается только в первом экземпляре. Важно: if/endif в одном параграфе |
 | `06_threat_classification.docx` | Классификация угроз | Статичный (без плейсхолдеров) |
 | `07_checklist.docx` | Таблица проверок | `{% for check in checks %}` → `{{ check.check_id }}`, `{{ check.name }}`, `{{ check.status }}`, `{{ check.notes }}` |
 

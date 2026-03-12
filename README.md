@@ -49,6 +49,9 @@ cd services/report-service
 pip install -r requirements.txt
 uvicorn app.main:app --port 8001 --reload
 
+# Наполнение БД тестовыми данными (один отчёт, SystemInfo, уязвимости, чеклист)
+python scripts/seed_test_data.py
+
 # Export Service
 cd services/export-service
 pip install -r requirements.txt

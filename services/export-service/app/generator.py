@@ -1,3 +1,4 @@
+import logging
 from io import BytesIO
 from pathlib import Path
 
@@ -10,6 +11,8 @@ from docxcompose.composer import Composer
 from app.config import settings
 from app.filler import fill_template
 
+logger = logging.getLogger(__name__)
+
 SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
 
 STATUS_LABEL = {
@@ -19,21 +22,25 @@ STATUS_LABEL = {
     "not_tested": "Не выполнено",
 }
 
-TEMPLATE_FILES = [
-    "01_title.docx",
-    "02_toc.docx",
-    "03_general_info.docx",
-    "04_test_results.docx",
-    "06_threat_classification.docx",
-    "07_checklist.docx",
+# Порядок шаблонов и их номера глав (None — без нумерации: титул, оглавление)
+TEMPLATE_FILES: list[tuple[str, int | None]] = [
+    ("01_title.docx",              None),
+    ("02_toc.docx",                None),
+    ("03_general_info.docx",       1),
+    ("04_test_results.docx",       2),
+    # 05_vulnerability.docx вставляется динамически как глава 3
+    ("06_threat_classification.docx", 4),
+    ("07_checklist.docx",          5),
 ]
 
 VULN_TEMPLATE = "05_vulnerability.docx"
+VULN_CHAPTER = 3
 
 
 async def _fetch(client: httpx.AsyncClient, path: str) -> dict:
     resp = await client.get(f"{settings.report_service_url}/api{path}")
     resp.raise_for_status()
+    logger.debug("Fetched %s -> %d", path, resp.status_code)
     return resp.json()
 
 
@@ -91,8 +98,11 @@ def _build_contexts(report: dict, system_info: dict, summary: dict, checklist: l
     }
 
 
-def _vuln_context(vuln: dict) -> dict:
+def _vuln_context(vuln: dict, is_first: bool = False, vuln_index: int = 1) -> dict:
     return {
+        "is_first": is_first,
+        "chapter_num": VULN_CHAPTER,
+        "vuln_index": vuln_index,          # для подзаголовка «3.1 Название»
         "bug_name": vuln.get("bug_name", ""),
         "bug_criticality": vuln.get("bug_criticality", ""),
         "cvss_score": vuln.get("cvss_score") or "",
@@ -121,6 +131,18 @@ def _merge_docs(docs: list[BytesIO]) -> BytesIO:
 
     master = Document(docs[0])
     composer = Composer(master)
+    # TODO: какая то срань. потом разберусь
+    # Обход docxcompose IndexError при doc.sections > master.sections
+    def _wrap_safe(orig_fn):
+        def _inner(doc):
+            try:
+                orig_fn(doc)
+            except IndexError:
+                pass
+        return _inner
+    composer.fix_section_types = _wrap_safe(composer.fix_section_types)
+    composer.fix_header_and_footers = _wrap_safe(composer.fix_header_and_footers)
+
     for doc_buf in docs[1:]:
         sub = Document(doc_buf)
         _prepend_page_break(sub)
@@ -133,6 +155,7 @@ def _merge_docs(docs: list[BytesIO]) -> BytesIO:
 
 
 async def generate_report(report_id: int) -> BytesIO:
+    logger.debug("Fetching report data: report_id=%d", report_id)
     async with httpx.AsyncClient(timeout=30, trust_env=False) as client:
         report = await _fetch(client, f"/reports/{report_id}")
         system_info = await _fetch(client, f"/reports/{report_id}/system-info")
@@ -146,26 +169,35 @@ async def generate_report(report_id: int) -> BytesIO:
         summary.get("vulnerabilities", []),
         key=lambda v: SEVERITY_ORDER.get(v.get("bug_criticality", "info"), 99),
     )
+    logger.info(
+        "Generating report: id=%d type=%s vulns=%d",
+        report_id, report_type, len(vulnerabilities),
+    )
 
     contexts = _build_contexts(report, system_info, summary, checklist)
-
     filled_docs: list[BytesIO] = []
 
-    for filename in TEMPLATE_FILES:
+    for filename, chapter_num in TEMPLATE_FILES:
         path = template_dir / filename
         if not path.exists():
+            logger.debug("Template not found, skipping: %s", filename)
             continue
-        ctx = contexts.get(filename, {})
+        ctx = {**contexts.get(filename, {}), "chapter_num": chapter_num}
         filled_docs.append(fill_template(path, ctx))
+        logger.debug("Filled template: %s", filename)
 
-        # После 04_test_results вставляем уязвимости
         if filename == "04_test_results.docx":
             vuln_path = template_dir / VULN_TEMPLATE
             if vuln_path.exists() and vulnerabilities:
-                for vuln in vulnerabilities:
-                    filled_docs.append(fill_template(vuln_path, _vuln_context(vuln)))
+                for i, vuln in enumerate(vulnerabilities):
+                    filled_docs.append(
+                        fill_template(vuln_path, _vuln_context(vuln, is_first=(i == 0), vuln_index=i + 1))
+                    )
+                logger.debug("Filled %d vulnerability templates", len(vulnerabilities))
 
     if not filled_docs:
         raise FileNotFoundError(f"No templates found in {template_dir}")
 
-    return _merge_docs(filled_docs)
+    result = _merge_docs(filled_docs)
+    logger.info("Report generated: id=%d docs=%d", report_id, len(filled_docs))
+    return result

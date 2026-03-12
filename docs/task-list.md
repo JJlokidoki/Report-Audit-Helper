@@ -80,6 +80,7 @@
 
 ### 2.7 Доработки
 - [x] Добавить `html_to_docx.py` в Export Service — конвертация HTML (из TipTap) в docx-элементы: текст → `RichText`, `<img src="data:base64,...">` → `InlineImage` (docxtpl). Зависимости: `beautifulsoup4`. Применить в filler.py для полей с rich text (description, bug_description, reproduction_steps, remediation)
+- [x] Шаблон `05_vulnerability.docx`: обернуть заголовок "Описание результатов тестирования" в `{% if is_first %}...{% endif %}` (в одном параграфе). В `generator.py` → `_vuln_context()` передавать флаг `is_first` (true только для первой уязвимости)
 
 ## Фаза 3: Export Service
 

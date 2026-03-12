@@ -1,4 +1,5 @@
 import base64
+import logging
 import re
 import tempfile
 from io import BytesIO
@@ -9,6 +10,8 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 from docx.shared import Cm
 from docxtpl import DocxTemplate
+
+logger = logging.getLogger(__name__)
 
 MAX_IMAGE_WIDTH = Cm(14)
 
@@ -142,6 +145,7 @@ def _fix_subdoc_images(sub, tpl: DocxTemplate) -> None:
             rid_map[rel.rId] = new_rid
     if not rid_map:
         return
+    logger.debug("Migrated %d image(s) from subdoc to main template", len(rid_map))
     for blip in doc.element.body.iter(qn("a:blip")):
         old = blip.get(qn("r:embed"))
         if old in rid_map:
@@ -154,6 +158,7 @@ def _add_block_image(
     """Вставляет <img> как отдельный параграф с выравниванием."""
     src = img_tag.get("src", "")
     if not (src and Path(src).exists()):
+        logger.warning("Image not found, skipping: %s", src[:80] if src else "(empty)")
         return
     width = _get_capped_width(src)
     doc.add_picture(src, width=width)
@@ -238,15 +243,29 @@ def html_to_subdoc(html: str | None, tpl: DocxTemplate):
 
 def enrich_context(context: dict, tpl: DocxTemplate) -> dict:
     """
-    Для полей из RICH_TEXT_FIELDS добавляет:
-      - field       → plain text  (для {{ field }})
-      - field_doc   → Subdoc      (для {{p field_doc }})
+    Конвертирует HTML-строки в plain text для {{ field }} плейсхолдеров.
+    Subdoc не создаётся — это предотвращает конфликты секций в docxcompose.
+    Для шаблонов с {{p field_doc }} используй enrich_context_with_subdoc().
     """
     result: dict = {}
     for key, value in context.items():
         if key in RICH_TEXT_FIELDS and isinstance(value, str):
             result[key] = html_to_text(value)
-            result[f"{key}_doc"] = html_to_subdoc(value, tpl)
         else:
             result[key] = value
+    return result
+
+
+def enrich_context_with_subdoc(context: dict, tpl: DocxTemplate) -> dict:
+    """
+    Расширенный вариант: дополнительно создаёт Subdoc для {{p field_doc }}.
+    Используй только в шаблонах, где гарантированно нет merge через docxcompose,
+    или когда шаблон явно использует {{p field_doc }} синтаксис.
+    """
+    result = enrich_context(context, tpl)
+    for key in list(result.keys()):
+        if key in RICH_TEXT_FIELDS:
+            original = context.get(key)
+            if isinstance(original, str):
+                result[f"{key}_doc"] = html_to_subdoc(original, tpl)
     return result

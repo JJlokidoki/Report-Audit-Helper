@@ -2,6 +2,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    log_level: str = "INFO"
     llm_provider: str = "ollama"
     llm_model: str = "gemma3:27b-it-qat"
     llm_base_url: str = "http://localhost:11434"

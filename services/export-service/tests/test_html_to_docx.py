@@ -9,6 +9,7 @@ from app.html_to_docx import (
     RICH_TEXT_FIELDS,
     _extract_base64_images,
     enrich_context,
+    enrich_context_with_subdoc,
     html_to_subdoc,
     html_to_text,
     is_html,
@@ -100,22 +101,21 @@ def test_subdoc_renders_with_formatting(tmp_path: Path):
     assert "after" in texts
 
 
-# --- enrich_context ---
+# --- enrich_context (plain text only, no Subdoc) ---
 
-def test_enrich_context_provides_plain_and_subdoc(tpl):
+def test_enrich_context_html_to_plain_text(tpl):
     ctx = {"bug_description": "<p>desc</p>", "bug_name": "SQLi"}
     result = enrich_context(ctx, tpl)
     assert result["bug_description"] == "desc"
-    assert isinstance(result["bug_description_doc"], Subdoc)
+    assert "bug_description_doc" not in result   # Subdoc не создаётся
     assert result["bug_name"] == "SQLi"
-    assert "bug_name_doc" not in result
 
 
-def test_enrich_context_plain_text_gives_str_doc(tpl):
+def test_enrich_context_plain_text_unchanged(tpl):
     ctx = {"reproduction_steps": "plain steps"}
     result = enrich_context(ctx, tpl)
     assert result["reproduction_steps"] == "plain steps"
-    assert result["reproduction_steps_doc"] == "plain steps"
+    assert "reproduction_steps_doc" not in result
 
 
 def test_enrich_context_none_unchanged(tpl):
@@ -129,6 +129,24 @@ def test_rich_text_fields_set(tpl):
         "goal", "testConditions",
         "bug_description", "reproduction_steps", "remediation",
     }
+
+
+# --- enrich_context_with_subdoc (opt-in Subdoc) ---
+
+def test_enrich_context_with_subdoc_creates_doc(tpl):
+    ctx = {"bug_description": "<p>desc</p>", "bug_name": "SQLi"}
+    result = enrich_context_with_subdoc(ctx, tpl)
+    assert result["bug_description"] == "desc"          # plain text сохраняется
+    assert isinstance(result["bug_description_doc"], Subdoc)  # Subdoc добавлен
+    assert result["bug_name"] == "SQLi"
+    assert "bug_name_doc" not in result
+
+
+def test_enrich_context_with_subdoc_plain_passthrough(tpl):
+    ctx = {"reproduction_steps": "plain steps"}
+    result = enrich_context_with_subdoc(ctx, tpl)
+    assert result["reproduction_steps"] == "plain steps"
+    assert result["reproduction_steps_doc"] == "plain steps"  # plain text, не Subdoc
 
 
 # --- _extract_base64_images ---

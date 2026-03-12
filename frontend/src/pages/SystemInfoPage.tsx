@@ -204,11 +204,23 @@ export default function SystemInfoPage() {
 
             <div className="form-control col-span-3">
               <label className="label py-1"><span className="label-text">Цель тестирования</span></label>
-              <RichEditor value={form.goal} onChange={(v) => updateForm("goal", v)} rows={2} placeholder="Цель тестирования" />
+              <textarea
+                className="input input-bordered w-full min-h-20"
+                value={form.goal ?? ""}
+                onChange={(e) => updateForm("goal", e.target.value || null)}
+                placeholder="Цель тестирования"
+                rows={2}
+              />
             </div>
             <div className="form-control col-span-3">
               <label className="label py-1"><span className="label-text">Условия тестирования</span></label>
-              <RichEditor value={form.testConditions} onChange={(v) => updateForm("testConditions", v)} rows={2} placeholder="Условия тестирования" />
+              <textarea
+                className="input input-bordered w-full min-h-20"
+                value={form.testConditions ?? ""}
+                onChange={(e) => updateForm("testConditions", e.target.value || null)}
+                placeholder="Условия тестирования"
+                rows={2}
+              />
             </div>
 
             <div className="form-control col-span-3">

@@ -1,8 +1,12 @@
 import { useEffect } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
+import { Fragment } from "@tiptap/pm/model";
+import { TextSelection } from "@tiptap/pm/state";
+import type { EditorView } from "@tiptap/pm/view";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
+import TextAlign from "@tiptap/extension-text-align";
 
 interface Props {
   value: string | null;
@@ -21,6 +25,63 @@ function fileToBase64(file: File): Promise<string> {
     reader.readAsDataURL(file);
   });
 }
+
+async function insertImageWithCaption(view: EditorView, file: File, insertAt?: number) {
+  const src = await fileToBase64(file);
+  const { state } = view;
+  const { schema } = state;
+  const imageType = schema.nodes["image"];
+  const paraType = schema.nodes["paragraph"];
+  if (!imageType || !paraType) return;
+
+  // TODO: каунтер картинок должен быть сквозной. Вохможно через шаблонизатор {{ image_n }}
+  let imgCount = 0;
+  state.doc.descendants((node) => { if (node.type === imageType) imgCount++; });
+  const n = imgCount + 1;
+
+  const italicMark = schema.marks["italic"]?.create();
+  const captionText = italicMark
+    ? schema.text(`Рисунок ${n}. `, [italicMark])
+    : schema.text(`Рисунок ${n}. `);
+
+  const img     = imageType.create({ src, align: "center" });
+  const caption = paraType.create({ textAlign: "center" }, captionText);
+  const next    = paraType.create({ textAlign: "left" });
+
+  const from = insertAt ?? state.selection.from;
+  const to   = insertAt != null ? insertAt : state.selection.to;
+  const content = Fragment.fromArray([img, caption, next]);
+  const tr = state.tr.replaceWith(from, to, content);
+
+  // Place cursor at end of caption text, ready to type description
+  const captionEnd = from + img.nodeSize + 1 + captionText.nodeSize;
+  tr.setSelection(TextSelection.create(tr.doc, captionEnd));
+  view.dispatch(tr);
+}
+
+const ALIGN_STYLES: Record<string, string> = {
+  left:   "display:block;margin-right:auto;",
+  center: "display:block;margin:0 auto;",
+  right:  "display:block;margin-left:auto;",
+};
+
+const ImageWithAlign = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      align: {
+        default: "left",
+        renderHTML: ({ align }) => ({ style: ALIGN_STYLES[align as string] ?? ALIGN_STYLES.left }),
+        parseHTML: (el) => {
+          const s = (el as HTMLElement).style;
+          if (s.marginLeft === "auto" && s.marginRight !== "auto") return "right";
+          if (s.marginLeft === "auto" || s.marginRight === "auto") return "center";
+          return "left";
+        },
+      },
+    };
+  },
+});
 
 // ── Toolbar ────────────────────────────────────────────────
 
@@ -55,6 +116,12 @@ function Divider() {
 
 function EditorToolbar({ editor }: { editor: Editor }) {
   const chain = () => editor.chain().focus();
+  const isImg = editor.isActive("image");
+  const imgAlign = editor.getAttributes("image").align as string | undefined;
+  const alignActive = (a: string) => isImg ? imgAlign === a : editor.isActive({ textAlign: a });
+  const setAlign = (a: string) => isImg
+    ? editor.chain().focus().updateAttributes("image", { align: a }).run()
+    : editor.chain().focus().setTextAlign(a).run();
 
   return (
     <div className="flex items-center gap-0.5 flex-wrap px-2 py-1 border-b border-base-300 bg-base-200/50">
@@ -107,6 +174,13 @@ function EditorToolbar({ editor }: { editor: Editor }) {
       <TBtn onClick={() => chain().setHorizontalRule().run()} title="Разделитель">
         —
       </TBtn>
+
+      <Divider />
+
+      {/* Alignment */}
+      <TBtn onClick={() => setAlign("left")}   active={alignActive("left")}   title="По левому краю">⬤▬▬</TBtn>
+      <TBtn onClick={() => setAlign("center")} active={alignActive("center")} title="По центру">▬⬤▬</TBtn>
+      <TBtn onClick={() => setAlign("right")}  active={alignActive("right")}  title="По правому краю">▬▬⬤</TBtn>
     </div>
   );
 }
@@ -117,8 +191,9 @@ function TipTapEditor({ value, onChange, placeholder, className }: Omit<Props, "
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Image.configure({ inline: false }),
+      ImageWithAlign.configure({ inline: false, allowBase64: true }),
       Placeholder.configure({ placeholder: placeholder ?? "" }),
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
     ],
     content: value || "",
     onUpdate: ({ editor }) => {
@@ -127,31 +202,24 @@ function TipTapEditor({ value, onChange, placeholder, className }: Omit<Props, "
     },
     editorProps: {
       handlePaste(view, event) {
-        const files = event.clipboardData?.files;
-        if (!files?.length) return false;
-        const imageNode = view.state.schema.nodes["image"];
-        if (!imageNode) return false;
-        Array.from(files)
-          .filter((f) => f.type.startsWith("image/"))
-          .forEach(async (file) => {
-            const src = await fileToBase64(file);
-            view.dispatch(view.state.tr.replaceSelectionWith(imageNode.create({ src })));
-          });
-        return false;
+        const items = event.clipboardData?.items;
+        if (!items) return false;
+        const imageItems = Array.from(items).filter((i) => i.type.startsWith("image/"));
+        if (!imageItems.length) return false;
+        imageItems.forEach((item) => {
+          const file = item.getAsFile();
+          if (file) insertImageWithCaption(view, file);
+        });
+        return true;
       },
       handleDrop(view, event) {
         const files = event.dataTransfer?.files;
         if (!files?.length) return false;
-        const imageNode = view.state.schema.nodes["image"];
-        if (!imageNode) return false;
-        const pos = view.posAtCoords({ left: event.clientX, top: event.clientY });
-        Array.from(files)
-          .filter((f) => f.type.startsWith("image/"))
-          .forEach(async (file) => {
-            const src = await fileToBase64(file);
-            view.dispatch(view.state.tr.insert(pos?.pos ?? 0, imageNode.create({ src })));
-          });
-        return false;
+        const imageFiles = Array.from(files).filter((f) => f.type.startsWith("image/"));
+        if (!imageFiles.length) return false;
+        const dropPos = view.posAtCoords({ left: event.clientX, top: event.clientY })?.pos;
+        imageFiles.forEach((file) => insertImageWithCaption(view, file, dropPos));
+        return true;
       },
     },
   });
@@ -182,7 +250,7 @@ function TipTapEditor({ value, onChange, placeholder, className }: Omit<Props, "
 
 // ── Export ─────────────────────────────────────────────────
 
-export default function RichEditor({ value, onChange, placeholder, rows = 4, className }: Props) {
+export default function RichEditor({ value, onChange, placeholder, className }: Props) {
   return (
     <TipTapEditor
       value={value}

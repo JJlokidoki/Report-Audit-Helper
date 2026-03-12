@@ -32,8 +32,8 @@
 - [x] Integration-тесты: 23 теста — все эндпоинты (reports, vulnerabilities, system-info, checklist, executors, software)
 
 ### 1.5 Доработки
-- [ ] Executor: убрать поля `position` и `organization` (оставить только `name`). Обновить модель, схемы, роутер, тесты
-- [ ] Software: добавить поле `description`, `is_preset`. Реализовать `preset_software.py`, предзаполнение при инициализации БД. Обновить модель, схемы, роутер, тесты
+- [x] Executor: убрать поля `position` и `organization` (оставить только `name`). Обновить модель, схемы, роутер, тесты
+- [x] Software: добавить поле `description`, `is_preset`. Реализовать `preset_software.py`, предзаполнение при инициализации БД. Обновить модель, схемы, роутер, тесты
 
 ## Фаза 2: Frontend (базовый)
 
@@ -53,8 +53,8 @@
 ### 2.3 API-клиенты
 - [x] `api/client.ts` — базовый axios instance с proxy
 - [x] `api/reportApi.ts` — все эндпоинты Report Service
-- [ ] `api/exportApi.ts` — скачивание Word (Фаза 7)
-- [ ] `api/aiApi.ts` — генерация описаний (Фаза 7)
+- [x] `api/exportApi.ts` — скачивание Word
+- [x] `api/aiApi.ts` — генерация описаний (sync + stream)
 
 ### 2.4 Страницы
 - [x] `ReportListPage` — TanStack Table, фильтры, сортировка, создание/удаление
@@ -64,15 +64,15 @@
 - [x] `VulnerabilityEditPage` — форма редактирования (textarea-заглушки для TipTap)
 - [x] `ChecklistPage` — группировка по категориям, фильтры, автосохранение
 - [x] `PlaceholderPage` — заглушка "В разработке"
-- [ ] `SettingsPage` — управление справочниками (Исполнители, ПО): CRUD таблицы, ссылка в Navbar
-- [ ] `SystemInfoPage` — убрать кнопки добавления Executor/Software, оставить только multi-select из справочника
+- [x] `SettingsPage` — управление справочниками (Исполнители, ПО): CRUD таблицы, ссылка в Navbar
+- [x] `SystemInfoPage` — убрать кнопки добавления Executor/Software, оставить только multi-select из справочника
 
 ### 2.5 Компоненты
 - [x] `SeverityBadge` — цветной badge по severity
 - [x] `AutomationBadge` — badge по automation_level
 - [ ] `RichEditor` — обёртка TipTap (Фаза 7)
 - [x] `ConfirmModal` — модалка подтверждения
-- [ ] `AIGenerateModal` — модалка AI-генерации (Фаза 7)
+- [x] `AIGenerateModal` — модалка AI-генерации (чат, стриминг, парсинг, применение)
 
 ### 2.6 Тесты Frontend
 - [ ] Unit-тесты компонентов (Vitest + React Testing Library)
@@ -119,7 +119,7 @@
 
 ## Фаза 7: Интеграция и документация
 
-- [ ] Интеграция Frontend ↔ Export Service (кнопка экспорта)
-- [ ] Интеграция Frontend ↔ AI Vuln Generator (AIGenerateModal + стриминг)
-- [ ] Документация API AI Vuln Generator для внешних интеграций (`docs/api-ai-integration.md`)
-- [ ] Финальный README.md с инструкцией запуска всех сервисов
+- [x] Интеграция Frontend ↔ Export Service (кнопка экспорта)
+- [x] Интеграция Frontend ↔ AI Vuln Generator (AIGenerateModal + стриминг)
+- [x] Документация API AI Vuln Generator для внешних интеграций (`docs/api-ai-integration.md`)
+- [x] Финальный README.md с инструкцией запуска всех сервисов

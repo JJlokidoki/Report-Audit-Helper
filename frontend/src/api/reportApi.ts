@@ -73,8 +73,11 @@ export const updateCheck = (reportId: number, checkId: string, data: { status?: 
 export const getExecutors = () =>
   client.get<Executor[]>("/executors").then((r) => r.data);
 
-export const createExecutor = (data: { name: string; position?: string; organization?: string }) =>
+export const createExecutor = (data: { name: string }) =>
   client.post<Executor>("/executors", data).then((r) => r.data);
+
+export const updateExecutor = (id: number, data: { name?: string }) =>
+  client.put<Executor>(`/executors/${id}`, data).then((r) => r.data);
 
 export const deleteExecutor = (id: number) =>
   client.delete(`/executors/${id}`);
@@ -83,8 +86,11 @@ export const deleteExecutor = (id: number) =>
 export const getSoftwareList = () =>
   client.get<Software[]>("/software").then((r) => r.data);
 
-export const createSoftware = (data: { name: string; version?: string }) =>
+export const createSoftware = (data: { name: string; description?: string; is_preset?: boolean }) =>
   client.post<Software>("/software", data).then((r) => r.data);
+
+export const updateSoftware = (id: number, data: { name?: string; description?: string }) =>
+  client.put<Software>(`/software/${id}`, data).then((r) => r.data);
 
 export const deleteSoftware = (id: number) =>
   client.delete(`/software/${id}`);

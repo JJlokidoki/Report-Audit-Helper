@@ -39,14 +39,13 @@ export interface SystemInfo {
 export interface Executor {
   id: number;
   name: string;
-  position: string | null;
-  organization: string | null;
 }
 
 export interface Software {
   id: number;
   name: string;
-  version: string | null;
+  description: string | null;
+  is_preset: boolean;
 }
 
 export interface Vulnerability {

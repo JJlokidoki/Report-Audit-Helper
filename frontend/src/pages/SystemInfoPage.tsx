@@ -6,10 +6,8 @@ import {
   getSystemInfo,
   updateSystemInfo,
   getExecutors,
-  createExecutor,
   setExecutors,
   getSoftwareList,
-  createSoftware,
   setSoftware,
 } from "../api/reportApi";
 import type { SystemInfo, Executor, Software } from "../types";
@@ -66,9 +64,6 @@ export default function SystemInfoPage() {
   });
   const [executors, setExecutorsLocal] = useState<Executor[]>([]);
   const [software, setSoftwareLocal] = useState<Software[]>([]);
-  const [addExecutorMode, setAddExecutorMode] = useState(false);
-  const [newExecutor, setNewExecutor] = useState({ name: "", position: "" });
-  const [newSoftware, setNewSoftware] = useState({ name: "", version: "" });
   const [selectedExecutorId, setSelectedExecutorId] = useState<string>("");
   const [selectedSoftwareId, setSelectedSoftwareId] = useState<string>("");
 
@@ -121,25 +116,6 @@ export default function SystemInfoPage() {
     onError: () => toast.error("Ошибка сохранения"),
   });
 
-  const createExecutorMutation = useMutation({
-    mutationFn: createExecutor,
-    onSuccess: (created) => {
-      setExecutorsLocal((prev) => [...prev, created]);
-      setNewExecutor({ name: "", position: "" });
-      setAddExecutorMode(false);
-    },
-    onError: () => toast.error("Ошибка создания исполнителя"),
-  });
-
-  const createSoftwareMutation = useMutation({
-    mutationFn: createSoftware,
-    onSuccess: (created) => {
-      setSoftwareLocal((prev) => [...prev, created]);
-      setNewSoftware({ name: "", version: "" });
-    },
-    onError: () => toast.error("Ошибка добавления ПО"),
-  });
-
   const availableExecutors = allExecutors.filter((e) => !executors.some((a) => a.id === e.id));
   const availableSoftware = allSoftware.filter((s) => !software.some((a) => a.id === s.id));
 
@@ -159,28 +135,6 @@ export default function SystemInfoPage() {
       if (sw) setSoftwareLocal((prev) => [...prev, sw]);
       setSelectedSoftwareId("");
     }
-  };
-
-  const handleAddNewExecutor = () => {
-    if (!newExecutor.name.trim()) {
-      toast.error("Введите имя");
-      return;
-    }
-    createExecutorMutation.mutate({
-      name: newExecutor.name.trim(),
-      position: newExecutor.position.trim() || undefined,
-    });
-  };
-
-  const handleAddNewSoftware = () => {
-    if (!newSoftware.name.trim()) {
-      toast.error("Введите название");
-      return;
-    }
-    createSoftwareMutation.mutate({
-      name: newSoftware.name.trim(),
-      version: newSoftware.version.trim() || undefined,
-    });
   };
 
   if (isNaN(reportId) || isLoading) {
@@ -254,29 +208,19 @@ export default function SystemInfoPage() {
               <div className="flex flex-wrap gap-2 mb-2">
                 {executors.map((e) => (
                   <span key={e.id} className="inline-flex items-center gap-1.5 px-2 py-1 bg-base-300 border border-base-300 text-sm">
-                    <span>{e.name}{e.position && <span className="text-base-content/50 font-mono text-xs ml-1">({e.position})</span>}</span>
+                    {e.name}
                     <button type="button" className="text-error/60 hover:text-error leading-none" onClick={() => setExecutorsLocal((prev) => prev.filter((x) => x.id !== e.id))}>×</button>
                   </span>
                 ))}
               </div>
-              <div className="flex flex-wrap gap-2">
-                <select className="select select-bordered select-sm w-48" value={selectedExecutorId} onChange={(e) => setSelectedExecutorId(e.target.value)}>
-                  <option value="">Выбрать...</option>
+              <div className="flex gap-2">
+                <select className="select select-bordered select-sm w-56" value={selectedExecutorId} onChange={(e) => setSelectedExecutorId(e.target.value)}>
+                  <option value="">Выбрать из справочника...</option>
                   {availableExecutors.map((e) => (
                     <option key={e.id} value={e.id}>{e.name}</option>
                   ))}
                 </select>
                 <button type="button" className="btn btn-sm btn-ghost" onClick={handleAddExecutor}>Добавить</button>
-                {!addExecutorMode ? (
-                  <button type="button" className="btn btn-sm btn-ghost" onClick={() => setAddExecutorMode(true)}>+ Новый</button>
-                ) : (
-                  <div className="flex gap-2 items-end">
-                    <input className="input input-bordered input-sm w-32" placeholder="Имя" value={newExecutor.name} onChange={(e) => setNewExecutor((p) => ({ ...p, name: e.target.value }))} />
-                    <input className="input input-bordered input-sm w-32" placeholder="Должность" value={newExecutor.position} onChange={(e) => setNewExecutor((p) => ({ ...p, position: e.target.value }))} />
-                    <button type="button" className="btn btn-sm btn-primary" onClick={handleAddNewExecutor} disabled={createExecutorMutation.isPending}>Сохранить</button>
-                    <button type="button" className="btn btn-sm btn-ghost" onClick={() => setAddExecutorMode(false)}>Отмена</button>
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -319,13 +263,12 @@ export default function SystemInfoPage() {
         <div className="collapse-content">
           <table className="table table-sm mb-3">
             <thead>
-              <tr><th>Название</th><th>Версия</th><th /></tr>
+              <tr><th>Название</th><th /></tr>
             </thead>
             <tbody>
               {software.map((s) => (
                 <tr key={s.id}>
                   <td>{s.name}</td>
-                  <td className="font-mono text-sm text-base-content/60">{s.version ?? "—"}</td>
                   <td>
                     <button type="button" className="btn btn-ghost btn-xs text-error/60 hover:text-error" onClick={() => setSoftwareLocal((prev) => prev.filter((x) => x.id !== s.id))}>×</button>
                   </td>
@@ -333,19 +276,14 @@ export default function SystemInfoPage() {
               ))}
             </tbody>
           </table>
-          <div className="flex flex-wrap gap-2">
-            <select className="select select-bordered select-sm w-48" value={selectedSoftwareId} onChange={(e) => setSelectedSoftwareId(e.target.value)}>
-              <option value="">Выбрать...</option>
+          <div className="flex gap-2">
+            <select className="select select-bordered select-sm w-64" value={selectedSoftwareId} onChange={(e) => setSelectedSoftwareId(e.target.value)}>
+              <option value="">Выбрать из справочника...</option>
               {availableSoftware.map((s) => (
-                <option key={s.id} value={s.id}>{s.name} {s.version ? `(${s.version})` : ""}</option>
+                <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
             <button type="button" className="btn btn-sm btn-ghost" onClick={handleAddSoftware}>Добавить</button>
-            <div className="flex gap-2">
-              <input className="input input-bordered input-sm w-28" placeholder="Название" value={newSoftware.name} onChange={(e) => setNewSoftware((p) => ({ ...p, name: e.target.value }))} />
-              <input className="input input-bordered input-sm w-24" placeholder="Версия" value={newSoftware.version} onChange={(e) => setNewSoftware((p) => ({ ...p, version: e.target.value }))} />
-              <button type="button" className="btn btn-sm btn-primary" onClick={handleAddNewSoftware} disabled={createSoftwareMutation.isPending}>Добавить</button>
-            </div>
           </div>
         </div>
       </div>

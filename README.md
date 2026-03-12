@@ -27,12 +27,8 @@ pentest-audit-helper/
 │   ├── ai-vuln-generator/      # AI-генерация описаний
 │   └── testgen-service/        # AI-генерация тестов (заглушка)
 ├── docs/                       # ТЗ и документация
-│   ├── tz-report-service.md
-│   ├── tz-export-service.md
-│   ├── tz-ai-vuln-generator.md
-│   ├── tz-testgen-service.md
-│   ├── tz-retest-service.md
-│   ├── tz-frontend.md
+│   ├── tz-*.md                 # Технические задания сервисов
+│   ├── api-ai-integration.md   # Документация API AI Vuln Generator
 │   └── task-list.md
 └── .cursor/rules/              # Правила для AI-агента
 ```
@@ -63,12 +59,12 @@ cd services/ai-vuln-generator
 pip install -r requirements.txt
 uvicorn app.main:app --port 8004 --reload
 
-# Retest Service
+# Retest Service (заглушка)
 cd services/retest-service
 pip install -r requirements.txt
 uvicorn app.main:app --port 8003 --reload
 
-# TestGen Service
+# TestGen Service (заглушка)
 cd services/testgen-service
 pip install -r requirements.txt
 uvicorn app.main:app --port 8005 --reload
@@ -98,9 +94,21 @@ npm test
 
 | Переменная | По умолчанию | Описание |
 |-----------|-------------|----------|
-| `LLM_PROVIDER` | `ollama` | Провайдер: ollama / openai / custom |
+| `LLM_PROVIDER` | `ollama` | Провайдер: `ollama` / `openai` / `custom` |
 | `LLM_MODEL` | `gemma3:27b-it-qat` | Модель |
 | `LLM_BASE_URL` | `http://localhost:11434` | URL API |
 | `LLM_API_KEY` | — | API-ключ (для внешних провайдеров) |
 | `LLM_TEMPERATURE` | `0.1` | Температура |
 | `LLM_MAX_TOKENS` | `2048` | Лимит токенов |
+
+Подробная документация API для внешних интеграций: [`docs/api-ai-integration.md`](docs/api-ai-integration.md)
+
+## Переменные окружения Frontend
+
+Создайте `frontend/.env.local` при необходимости переопределить адреса сервисов:
+
+```env
+VITE_REPORT_API_URL=http://127.0.0.1:8001/api
+VITE_EXPORT_API_URL=http://127.0.0.1:8002
+VITE_AI_API_URL=http://127.0.0.1:8004
+```

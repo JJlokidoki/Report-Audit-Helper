@@ -87,8 +87,6 @@ class Executor(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255))
-    position: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    organization: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     system_infos: Mapped[list["SystemInfo"]] = relationship(
         "SystemInfo", secondary=system_info_executors, back_populates="executors"
@@ -100,7 +98,8 @@ class Software(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255))
-    version: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    is_preset: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
 
     system_infos: Mapped[list["SystemInfo"]] = relationship(
         "SystemInfo", secondary=system_info_software, back_populates="software"

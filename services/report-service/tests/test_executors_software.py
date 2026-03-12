@@ -4,9 +4,12 @@ from httpx import AsyncClient
 
 @pytest.mark.asyncio
 async def test_crud_executor(client: AsyncClient):
-    resp = await client.post("/api/executors", json={"name": "Alice", "position": "Lead"})
+    resp = await client.post("/api/executors", json={"name": "Alice"})
     assert resp.status_code == 201
-    eid = resp.json()["id"]
+    data = resp.json()
+    assert data["name"] == "Alice"
+    assert "position" not in data
+    eid = data["id"]
 
     resp = await client.get("/api/executors")
     assert len(resp.json()) == 1
@@ -23,15 +26,26 @@ async def test_crud_executor(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_crud_software(client: AsyncClient):
-    resp = await client.post("/api/software", json={"name": "Nmap", "version": "7.94"})
+    resp = await client.post("/api/software", json={"name": "Custom Tool", "description": "Test tool"})
     assert resp.status_code == 201
-    sid = resp.json()["id"]
+    data = resp.json()
+    assert data["name"] == "Custom Tool"
+    assert data["description"] == "Test tool"
+    assert data["is_preset"] is False
+    sid = data["id"]
 
     resp = await client.get("/api/software")
     assert len(resp.json()) == 1
 
-    resp = await client.put(f"/api/software/{sid}", json={"version": "7.95"})
-    assert resp.json()["version"] == "7.95"
+    resp = await client.put(f"/api/software/{sid}", json={"description": "Updated"})
+    assert resp.json()["description"] == "Updated"
 
     resp = await client.delete(f"/api/software/{sid}")
     assert resp.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_preset_software_in_list(client: AsyncClient):
+    resp = await client.post("/api/software", json={"name": "Preset", "is_preset": True})
+    assert resp.status_code == 201
+    assert resp.json()["is_preset"] is True

@@ -28,14 +28,10 @@ class ReportListResponse(ReportResponse):
 
 class ExecutorCreate(BaseModel):
     name: str
-    position: str | None = None
-    organization: str | None = None
 
 
 class ExecutorUpdate(BaseModel):
     name: str | None = None
-    position: str | None = None
-    organization: str | None = None
 
 
 class ExecutorResponse(BaseModel):
@@ -43,18 +39,17 @@ class ExecutorResponse(BaseModel):
 
     id: int
     name: str
-    position: str | None
-    organization: str | None
 
 
 class SoftwareCreate(BaseModel):
     name: str
-    version: str | None = None
+    description: str | None = None
+    is_preset: bool = False
 
 
 class SoftwareUpdate(BaseModel):
     name: str | None = None
-    version: str | None = None
+    description: str | None = None
 
 
 class SoftwareResponse(BaseModel):
@@ -62,7 +57,8 @@ class SoftwareResponse(BaseModel):
 
     id: int
     name: str
-    version: str | None
+    description: str | None
+    is_preset: bool
 
 
 class SystemInfoUpdate(BaseModel):

@@ -82,6 +82,38 @@ export async function generateSummary(vulnerabilities_markdown: string): Promise
   return data.summary_markdown;
 }
 
+// ─── Settings ────────────────────────────────────────────────────────────────
+
+export interface AISettings {
+  llm_provider: string;
+  llm_model: string;
+  llm_base_url: string;
+  llm_api_key: string;
+  llm_temperature: number;
+  llm_max_tokens: number;
+  providers: string[];
+}
+
+export type AISettingsUpdate = Partial<Omit<AISettings, "providers">>;
+
+export async function getAiSettings(): Promise<AISettings> {
+  const resp = await fetch(`${AI_BASE_URL}/api/ai/settings`);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return resp.json();
+}
+
+export async function updateAiSettings(data: AISettingsUpdate): Promise<AISettings> {
+  const resp = await fetch(`${AI_BASE_URL}/api/ai/settings`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return resp.json();
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
 export function toBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

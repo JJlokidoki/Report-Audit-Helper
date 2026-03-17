@@ -1,0 +1,48 @@
+services:
+  report-service:
+    build: services/report-service
+    ports:
+      - "8001:8001"
+    volumes:
+      - report-db:/app/data
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./data/report.db
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/api/reports')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  export-service:
+    build: services/export-service
+    ports:
+      - "8002:8002"
+    environment:
+      - REPORT_SERVICE_URL=http://report-service:8001
+    depends_on:
+      report-service:
+        condition: service_healthy
+
+  ai-vuln-generator:
+    build: services/ai-vuln-generator
+    ports:
+      - "8004:8004"
+    environment:
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - LLM_MODEL=${LLM_MODEL:-openai/gpt-oss-20b}
+      - LLM_BASE_URL=${LLM_BASE_URL:-http://host.docker.internal:1234/v1}
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.1}
+      - LLM_MAX_TOKENS=${LLM_MAX_TOKENS:-2048}
+
+  frontend:
+    build: frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - report-service
+      - export-service
+      - ai-vuln-generator
+
+volumes:
+  report-db:

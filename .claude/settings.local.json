@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs wc:*)",
+      "Bash(find /d/projects/pentest-audit-helper/docs -type f -name *.md)",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 8001,8002,8004,5173 -State Listen -ErrorAction SilentlyContinue | Select-Object LocalPort,OwningProcess,State\")",
+      "Bash(powershell -Command \"pwsh ''d:\\\\projects\\\\pentest-audit-helper\\\\.cursor\\\\skills\\\\start-services\\\\scripts\\\\start.ps1'' -All\")",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 8001,8002,8004,5173 -State Listen -ErrorAction SilentlyContinue | Select-Object LocalPort,State\")",
+      "Bash(./venv/Scripts/python -m pytest tests/ -v)",
+      "Bash(npx vitest:*)",
+      "Bash(powershell -Command \"5173..5180 | ForEach-Object { $c = Get-NetTCPConnection -LocalPort $_ -State Listen -ErrorAction SilentlyContinue; if \\($c\\) { Write-Host \"\"Port $_ - OK\"\" } }\")",
+      "Bash(grep -v \"^\\\\.$\")",
+      "Bash(ls -la /d/projects/pentest-audit-helper/.env*)"
+    ]
+  }
+}

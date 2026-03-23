@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { getReport, getSystemInfo } from "../../api/reportApi";
-import { downloadReport } from "../../api/exportApi";
+import { downloadWord, downloadPdf, previewPdf } from "../../api/exportApi";
 import type { SystemInfo } from "../../types";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -51,6 +51,8 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
 
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [exporting, setExporting] = useState(false);
+  type ExportAction = "preview-pdf" | "download-pdf" | "download-word";
+  const [pendingAction, setPendingAction] = useState<ExportAction | null>(null);
 
   const { data: report } = useQuery({
     queryKey: ["report", reportId],
@@ -64,29 +66,31 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
     enabled: !!reportId,
   });
 
-  const handleExport = async () => {
-    if (!reportId) return;
-
-    const missing = systemInfo ? getMissingFields(systemInfo) : [];
-    if (missing.length > 0) {
-      setMissingFields(missing);
-      return;
-    }
-    await doExport();
-  };
-
-  const doExport = async () => {
+  const runExport = async (action: ExportAction) => {
     if (!reportId) return;
     setMissingFields([]);
     setExporting(true);
     try {
-      await downloadReport(reportId);
-      toast.success("Отчёт скачан");
+      if (action === "preview-pdf") await previewPdf(reportId);
+      else if (action === "download-pdf") await downloadPdf(reportId);
+      else await downloadWord(reportId);
+      if (action !== "preview-pdf") toast.success("Отчёт скачан");
     } catch {
       toast.error("Ошибка экспорта");
     } finally {
       setExporting(false);
     }
+  };
+
+  const handleExport = (action: ExportAction) => {
+    if (!reportId) return;
+    const missing = systemInfo ? getMissingFields(systemInfo) : [];
+    if (missing.length > 0) {
+      setPendingAction(action);
+      setMissingFields(missing);
+      return;
+    }
+    runExport(action);
   };
 
   return (
@@ -145,14 +149,32 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
             )}
           </button>
           {report && (
-            <button
-              type="button"
-              className="btn btn-sm btn-outline btn-primary font-display tracking-wider text-xs"
-              onClick={handleExport}
-              disabled={exporting}
-            >
-              {exporting ? <span className="loading loading-spinner loading-xs" /> : "Экспорт"}
-            </button>
+            <div className="dropdown dropdown-end">
+              <div
+                tabIndex={0}
+                role="button"
+                className="btn btn-sm btn-outline btn-primary font-display tracking-wider text-xs"
+              >
+                {exporting ? <span className="loading loading-spinner loading-xs" /> : "Экспорт \u25BE"}
+              </div>
+              <ul tabIndex={0} className="dropdown-content menu bg-base-200 border border-base-300 rounded-sm z-50 w-52 p-1 mt-1">
+                <li>
+                  <button onClick={() => { handleExport("preview-pdf"); (document.activeElement as HTMLElement)?.blur(); }} disabled={exporting}>
+                    Просмотр PDF
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => { handleExport("download-pdf"); (document.activeElement as HTMLElement)?.blur(); }} disabled={exporting}>
+                    Скачать PDF
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => { handleExport("download-word"); (document.activeElement as HTMLElement)?.blur(); }} disabled={exporting}>
+                    Скачать Word
+                  </button>
+                </li>
+              </ul>
+            </div>
           )}
         </div>
       </header>
@@ -170,19 +192,19 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
               ))}
             </ul>
             <div className="modal-action mt-0">
-              <button className="btn btn-sm" onClick={() => setMissingFields([])}>
+              <button className="btn btn-sm" onClick={() => { setMissingFields([]); setPendingAction(null); }}>
                 Отмена
               </button>
               <button
                 className="btn btn-sm btn-primary"
-                onClick={doExport}
+                onClick={() => { if (pendingAction) runExport(pendingAction); }}
                 disabled={exporting}
               >
                 {exporting ? <span className="loading loading-spinner loading-xs" /> : "Экспортировать"}
               </button>
             </div>
           </div>
-          <div className="modal-backdrop" onClick={() => setMissingFields([])} />
+          <div className="modal-backdrop" onClick={() => { setMissingFields([]); setPendingAction(null); }} />
         </dialog>
       )}
     </>

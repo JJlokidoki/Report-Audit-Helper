@@ -186,7 +186,13 @@ def html_to_subdoc(html: str | None, tpl: DocxTemplate):
     if not html:
         return ""
     if not is_html(html):
-        return html
+        # Plain text тоже оборачиваем в Subdoc для корректной работы с {{p}}
+        sub = tpl.new_subdoc()
+        doc = sub.subdocx
+        if doc.paragraphs and not doc.paragraphs[0].text:
+            doc.paragraphs[0]._element.getparent().remove(doc.paragraphs[0]._element)
+        doc.add_paragraph(html)
+        return sub
 
     cleaned = _clean_html(html)
     prepared, tmp_files = _extract_base64_images(cleaned)

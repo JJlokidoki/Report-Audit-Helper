@@ -144,6 +144,37 @@ def _prepend_page_break(doc: Document) -> None:
     doc.element.body.insert(0, p)
 
 
+def _is_landscape(doc: Document) -> bool:
+    """Проверяет, имеет ли документ альбомную ориентацию."""
+    for section in doc.sections:
+        orient = section._sectPr.find(qn("w:pgSz"))
+        if orient is not None and orient.get(qn("w:orient")) == "landscape":
+            return True
+    return False
+
+
+def _prepend_section_break_landscape(doc: Document, prev_section) -> None:
+    """Вставляет section break перед документом для перехода в landscape."""
+    # Создаём параграф с минимальным sectPr (portrait) — это закрывает предыдущую секцию
+    p = OxmlElement("w:p")
+    pPr = OxmlElement("w:pPr")
+
+    sect_pr = OxmlElement("w:sectPr")
+    # Тип: новая страница
+    type_el = OxmlElement("w:type")
+    type_el.set(qn("w:val"), "nextPage")
+    sect_pr.append(type_el)
+    # Размер страницы portrait (A4), EMU → twips (1 twip = 635 EMU)
+    pg_sz = OxmlElement("w:pgSz")
+    pg_sz.set(qn("w:w"), str(int(prev_section.page_width) // 635))
+    pg_sz.set(qn("w:h"), str(int(prev_section.page_height) // 635))
+    sect_pr.append(pg_sz)
+
+    pPr.append(sect_pr)
+    p.append(pPr)
+    doc.element.body.insert(0, p)
+
+
 def _merge_docs(docs: list[BytesIO]) -> BytesIO:
     """Сливает список BytesIO docx в один документ."""
     if not docs:
@@ -163,9 +194,14 @@ def _merge_docs(docs: list[BytesIO]) -> BytesIO:
     composer.fix_section_types = _wrap_safe(composer.fix_section_types)
     composer.fix_header_and_footers = _wrap_safe(composer.fix_header_and_footers)
 
-    for doc_buf in docs[1:]:
+    landscape_indices = []
+    for i, doc_buf in enumerate(docs[1:], start=1):
         sub = Document(doc_buf)
-        _prepend_page_break(sub)
+        if _is_landscape(sub):
+            landscape_indices.append(i)
+            _prepend_section_break_landscape(sub, master.sections[-1])
+        else:
+            _prepend_page_break(sub)
         composer.append(sub)
 
     # Сквозная нумерация страниц: убираем рестарт нумерации во всех секциях кроме первой
@@ -177,7 +213,58 @@ def _merge_docs(docs: list[BytesIO]) -> BytesIO:
     result = BytesIO()
     composer.save(result)
     result.seek(0)
+
+    # Восстановить landscape-ориентацию после composer.save(),
+    # т.к. docxcompose сбрасывает sectPr при слиянии
+    if landscape_indices:
+        result = _fix_landscape_sections(result)
+
     return result
+
+
+def _fix_landscape_sections(buf: BytesIO) -> BytesIO:
+    """Устанавливает landscape для последней секции документа.
+
+    docxcompose может поместить sectPr не в body, а в pPr последнего параграфа.
+    Здесь мы гарантируем что body-level sectPr имеет landscape ориентацию.
+    """
+    doc = Document(buf)
+    body = doc.element.body
+
+    # Ищем body-level sectPr (прямые потомки body, не вложенные в pPr)
+    last_sect = body.findall(qn("w:sectPr"))
+    if last_sect:
+        sect_pr = last_sect[-1]
+    else:
+        # Нет body-level sectPr — создаём
+        sect_pr = OxmlElement("w:sectPr")
+        body.append(sect_pr)
+
+    # Устанавливаем landscape
+    pg_sz = sect_pr.find(qn("w:pgSz"))
+    if pg_sz is None:
+        pg_sz = OxmlElement("w:pgSz")
+        sect_pr.insert(0, pg_sz)
+    pg_sz.set(qn("w:w"), "16838")
+    pg_sz.set(qn("w:h"), "11906")
+    pg_sz.set(qn("w:orient"), "landscape")
+
+    # Margins для landscape (если отсутствуют)
+    pg_mar = sect_pr.find(qn("w:pgMar"))
+    if pg_mar is None:
+        pg_mar = OxmlElement("w:pgMar")
+        pg_mar.set(qn("w:top"), "1021")
+        pg_mar.set(qn("w:right"), "1021")
+        pg_mar.set(qn("w:bottom"), "1021")
+        pg_mar.set(qn("w:left"), "1021")
+        pg_mar.set(qn("w:header"), "680")
+        pg_mar.set(qn("w:footer"), "709")
+        sect_pr.append(pg_mar)
+
+    out = BytesIO()
+    doc.save(out)
+    out.seek(0)
+    return out
 
 
 async def generate_report(report_id: int) -> BytesIO:

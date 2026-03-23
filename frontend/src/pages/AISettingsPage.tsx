@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { getAiSettings, updateAiSettings } from "../api/aiApi";
+import { getAiSettings, updateAiSettings, checkAiHealth } from "../api/aiApi";
 import type { AISettingsUpdate } from "../api/aiApi";
 
 export default function AISettingsPage() {
@@ -9,7 +9,7 @@ export default function AISettingsPage() {
   const { data, isLoading, isError } = useQuery({ queryKey: ["ai-settings"], queryFn: getAiSettings });
 
   const [form, setForm] = useState<AISettingsUpdate>({});
-  const [showKey, setShowKey] = useState(false);
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
     if (data) {
@@ -17,7 +17,6 @@ export default function AISettingsPage() {
         llm_provider: data.llm_provider,
         llm_model: data.llm_model,
         llm_base_url: data.llm_base_url,
-        llm_api_key: data.llm_api_key,
         llm_temperature: data.llm_temperature,
         llm_max_tokens: data.llm_max_tokens,
       });
@@ -29,6 +28,22 @@ export default function AISettingsPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["ai-settings"] }); toast.success("Настройки сохранены"); },
     onError: () => toast.error("Ошибка сохранения"),
   });
+
+  const handleCheck = async () => {
+    setChecking(true);
+    try {
+      const res = await checkAiHealth();
+      if (res.status === "ok") {
+        toast.success(`Соединение установлено — ${res.provider}/${res.model}`);
+      } else {
+        toast.error(`Ошибка: ${res.detail}`);
+      }
+    } catch {
+      toast.error("AI-сервис недоступен");
+    } finally {
+      setChecking(false);
+    }
+  };
 
   if (isLoading) return <div className="text-sm text-base-content/40">Загрузка...</div>;
   if (isError || !data) return <div className="text-sm text-error">AI-сервис недоступен</div>;
@@ -70,25 +85,6 @@ export default function AISettingsPage() {
           />
         </div>
 
-        <div className="form-control col-span-3">
-          <label className="label py-1"><span className="label-text">API Key</span></label>
-          <div className="flex gap-2">
-            <input
-              type={showKey ? "text" : "password"}
-              className="input input-bordered w-full font-mono text-sm"
-              value={form.llm_api_key ?? ""}
-              onChange={(e) => set("llm_api_key", e.target.value)}
-            />
-            <button
-              className="btn btn-ghost btn-square"
-              onClick={() => setShowKey((v) => !v)}
-              title={showKey ? "Скрыть" : "Показать"}
-            >
-              {showKey ? "◇" : "◈"}
-            </button>
-          </div>
-        </div>
-
         <div className="form-control">
           <label className="label py-1"><span className="label-text">Temperature</span></label>
           <input
@@ -115,13 +111,27 @@ export default function AISettingsPage() {
         </div>
       </div>
 
-      <div className="pt-4">
+      <div className="flex gap-2 pt-4">
         <button
           className="btn btn-primary font-display tracking-wider"
           onClick={() => saveMut.mutate(form)}
           disabled={saveMut.isPending}
         >
           {saveMut.isPending ? "Сохранение…" : "Сохранить"}
+        </button>
+        <button
+          className="btn btn-outline font-display tracking-wider text-xs"
+          onClick={handleCheck}
+          disabled={checking}
+        >
+          {checking ? "Проверка…" : "Проверить соединение"}
+        </button>
+        <button
+          className="btn btn-outline btn-disabled font-display tracking-wider text-xs"
+          disabled
+          title="В разработке"
+        >
+          Обновить токен
         </button>
       </div>
     </div>

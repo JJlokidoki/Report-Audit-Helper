@@ -1,8 +1,10 @@
+import re
 from io import BytesIO
 from pathlib import Path
 from zipfile import ZipFile
 
 from docxtpl import DocxTemplate
+from docx import Document
 
 from app.html_to_docx import enrich_context, enrich_context_with_subdoc
 
@@ -43,12 +45,121 @@ def _patch_missing_ns(buf: BytesIO) -> BytesIO:
     return out
 
 
+def _merge_jinja_runs(template_path: Path) -> BytesIO:
+    """Склеивает разбитые Word-ом runs содержащие Jinja-теги в один run.
+
+    Word часто разбивает текст вроде {%tr endfor %} на несколько XML-runs
+    с разным форматированием, из-за чего docxtpl не может распознать тег.
+    """
+    buf = BytesIO()
+    with ZipFile(str(template_path), "r") as zin:
+        xml = zin.read("word/document.xml").decode("utf-8")
+        # Склеиваем соседние <w:r>...</w:r> внутри <w:p> и <w:tc>,
+        # если их объединённый текст содержит Jinja-маркеры
+        def _merge_runs_in_match(m: re.Match) -> str:
+            tag = m.group(0)
+            # Находим все <w:r>...</w:r> блоки
+            runs = list(re.finditer(r"<w:r[ >].*?</w:r>", tag, re.DOTALL))
+            if len(runs) < 2:
+                return tag
+            # Собираем текст из всех runs
+            full_text = ""
+            for run in runs:
+                texts = re.findall(r"<w:t[^>]*>(.*?)</w:t>", run.group(0), re.DOTALL)
+                full_text += "".join(texts)
+            # Если нет Jinja-тегов, не трогаем
+            if not re.search(r"\{[%\{]", full_text):
+                return tag
+            # Берём форматирование из первого run
+            first_run = runs[0].group(0)
+            rpr_match = re.search(r"<w:rPr>.*?</w:rPr>", first_run, re.DOTALL)
+            rpr = rpr_match.group(0) if rpr_match else ""
+            # Собираем один run со всем текстом
+            merged_run = f'<w:r>{rpr}<w:t xml:space="preserve">{full_text}</w:t></w:r>'
+            # Заменяем все runs на один
+            start = runs[0].start()
+            end = runs[-1].end()
+            return tag[:start] + merged_run + tag[end:]
+
+        # Обрабатываем ячейки таблицы и параграфы
+        xml = re.sub(r"<w:tc[ >].*?</w:tc>", _merge_runs_in_match, xml, flags=re.DOTALL)
+        xml = re.sub(r"<w:p[ >].*?</w:p>", _merge_runs_in_match, xml, flags=re.DOTALL)
+
+        files = {i.filename: zin.read(i.filename) for i in zin.infolist()}
+
+    with ZipFile(buf, "w") as zout:
+        for name, data in files.items():
+            zout.writestr(name, xml.encode("utf-8") if name == "word/document.xml" else data)
+    buf.seek(0)
+    return buf
+
+
+def _fill_checklist_table(doc_buf: BytesIO, checks: list[dict]) -> BytesIO:
+    """Заполняет таблицу чеклиста программно, клонируя строку-шаблон."""
+    from copy import deepcopy
+    from docx.enum.section import WD_ORIENT
+
+    doc = Document(doc_buf)
+
+    # Альбомная ориентация для чеклиста
+    for section in doc.sections:
+        section.orientation = WD_ORIENT.LANDSCAPE
+        # Swap width/height если ещё не в landscape
+        if section.page_width < section.page_height:
+            section.page_width, section.page_height = section.page_height, section.page_width
+
+    if not doc.tables or not checks:
+        buf = BytesIO()
+        doc.save(buf)
+        buf.seek(0)
+        return buf
+
+    table = doc.tables[0]
+    # Строка 1 — шаблонная (пустая), клонируем её для каждой проверки
+    template_row_el = table.rows[1]._tr
+
+    for i, check in enumerate(checks):
+        if i == 0:
+            # Заполняем шаблонную строку первой проверкой
+            row = table.rows[1]
+        else:
+            new_tr = deepcopy(template_row_el)
+            table._tbl.append(new_tr)
+            row = table.rows[-1]
+
+        values = [
+            check.get("check_id", ""),
+            check.get("name", ""),
+            check.get("category", ""),
+            check.get("result", ""),
+        ]
+        for ci, val in enumerate(values):
+            cell = row.cells[ci]
+            cell.paragraphs[0].text = val
+
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    return buf
+
+
 def fill_template(template_path: Path, context: dict, use_subdoc: bool = False) -> BytesIO:
     """Заполняет docxtpl шаблон контекстом, конвертируя HTML-поля в RichText."""
-    doc = DocxTemplate(str(template_path))
+    cleaned = _merge_jinja_runs(template_path)
+    doc = DocxTemplate(cleaned)
     enrich = enrich_context_with_subdoc if use_subdoc else enrich_context
+
+    # Извлекаем checks до рендера — они не нужны Jinja
+    checks = context.pop("checks", None)
+
     doc.render(enrich(context, doc))
     buf = BytesIO()
     doc.save(buf)
     buf.seek(0)
-    return _patch_missing_ns(buf)
+    buf = _patch_missing_ns(buf)
+
+    # Если есть checks — заполняем таблицу программно
+    if checks:
+        buf = _fill_checklist_table(buf, checks)
+
+    return buf

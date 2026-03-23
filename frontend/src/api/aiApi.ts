@@ -112,6 +112,20 @@ export async function updateAiSettings(data: AISettingsUpdate): Promise<AISettin
   return resp.json();
 }
 
+export interface AIHealthResult {
+  status: "ok" | "error";
+  provider: string;
+  model: string;
+  reply?: string;
+  detail?: string;
+}
+
+export async function checkAiHealth(): Promise<AIHealthResult> {
+  const resp = await fetch(`${AI_BASE_URL}/api/ai/health`);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return resp.json();
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export function toBase64(file: File): Promise<string> {

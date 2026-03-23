@@ -1,8 +1,11 @@
+import logging
+
 from pydantic import BaseModel
 from fastapi import APIRouter
 
 from app.config import settings
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/ai", tags=["settings"])
 
 PROVIDERS = ["openai", "ollama", "gigachat"]
@@ -51,3 +54,27 @@ async def update_settings(body: AISettingsUpdate):
     import app.providers as prov
     prov._current = None
     return await get_settings()
+
+
+@router.get("/health")
+async def health_check():
+    """Try a minimal LLM call to verify connection, auth and model."""
+    import app.providers as prov
+    prov._current = None  # force re-create with current settings
+    try:
+        provider = prov.get_provider()
+        reply = provider.chat([{"role": "user", "content": "ping"}])
+        return {
+            "status": "ok",
+            "provider": settings.llm_provider,
+            "model": settings.llm_model,
+            "reply": reply[:100],
+        }
+    except Exception as e:
+        logger.warning("Health check failed: %s", e)
+        return {
+            "status": "error",
+            "provider": settings.llm_provider,
+            "model": settings.llm_model,
+            "detail": str(e),
+        }

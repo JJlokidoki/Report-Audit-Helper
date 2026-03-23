@@ -4,6 +4,7 @@ docxtpl
 docxcompose
 python-docx
 httpx
+python-multipart
 pydantic-settings
 beautifulsoup4
 htmldocx

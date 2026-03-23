@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 const settingsLinks = [
   { to: "/settings/ai", label: "Настройки AI" },
   { to: "/settings/directories", label: "Справочники" },
+  { to: "/settings/templates", label: "Шаблоны" },
 ];
 
 function SidebarLink({ to, label, delay }: { to: string; label: string; delay: number }) {

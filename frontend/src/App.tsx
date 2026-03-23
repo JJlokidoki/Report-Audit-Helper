@@ -10,6 +10,7 @@ import VulnerabilityEditPage from "./pages/VulnerabilityEditPage";
 import ChecklistPage from "./pages/ChecklistPage";
 import AISettingsPage from "./pages/AISettingsPage";
 import DirectoriesPage from "./pages/DirectoriesPage";
+import TemplatesPage from "./pages/TemplatesPage";
 import PlaceholderPage from "./components/common/PlaceholderPage";
 
 const queryClient = new QueryClient({
@@ -27,6 +28,7 @@ export default function App() {
               <Route index element={<Navigate to="ai" replace />} />
               <Route path="ai" element={<AISettingsPage />} />
               <Route path="directories" element={<DirectoriesPage />} />
+              <Route path="templates" element={<TemplatesPage />} />
             </Route>
             <Route path="reports/:id">
               <Route index element={<Navigate to="system-info" replace />} />

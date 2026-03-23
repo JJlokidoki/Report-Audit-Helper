@@ -138,3 +138,11 @@ cd frontend && npm test
 - Technical specs per service: `docs/tz-*.md`
 - Feature roadmap: `docs/task-list.md`
 - WSTG checklist data: `docs/wstg-table.md`
+
+## Backlog
+
+- Ongoing backlog of ideas and improvements: `docs/backlog.md`
+- Managed via `/backlog` skill (add, list, done, priority, show, idea)
+- When an agent discovers something out of scope that needs improvement — suggest to the user: "добавь в бэклог через `/backlog add ...`"
+- Before starting work on a feature area, check related backlog items: `/backlog list [category]`
+- Do NOT automatically modify the backlog file without user request

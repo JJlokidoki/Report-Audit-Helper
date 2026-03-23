@@ -30,7 +30,10 @@
       "Bash(curl -s http://localhost:8001/api/reports)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8002/docs)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8002/api/export/4/word)",
-      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 8002 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess\")"
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 8002 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess\")",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs",
+      "Bash(git log:*)"
     ]
   }
 }

@@ -68,13 +68,13 @@ const app = Vue.createApp({
     },
     async beforeMount() {
         await this.loadConfigData();
-        const hash = window.location.hash.slice(1);
+        const hash = decodeURIComponent(window.location.hash.slice(1));
         if (hash) this.setButtonsToVector(hash);
         this.notifyParent();
     },
     mounted() {
         window.addEventListener("hashchange", () => {
-            this.setButtonsToVector(window.location.hash.slice(1));
+            this.setButtonsToVector(decodeURIComponent(window.location.hash.slice(1)));
         });
     },
 });

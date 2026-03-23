@@ -36,7 +36,7 @@ export default function CVSSCalculatorModal({ open, onClose, onApply, initialVec
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const iframeSrc = initialVector
-    ? `/cvss_calc/index.html?theme=${theme}&lang=ru#${encodeURIComponent(initialVector)}`
+    ? `/cvss_calc/index.html?theme=${theme}&lang=ru#${initialVector}`
     : `/cvss_calc/index.html?theme=${theme}&lang=ru`;
 
   const handleMessage = useCallback((e: MessageEvent) => {

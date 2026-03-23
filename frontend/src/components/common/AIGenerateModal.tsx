@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import type { Severity } from "../../types";
 import { streamVuln, toBase64 } from "../../api/aiApi";
 import type { ChatMessage } from "../../api/aiApi";
+import { mdToHtml } from "../../utils/mdToHtml";
 
 export interface VulnFields {
   bug_name?: string;
@@ -39,9 +40,9 @@ function parseVulnMarkdown(md: string): VulnFields {
 
   return {
     ...(title && { bug_name: title }),
-    ...(desc && { bug_description: desc }),
-    ...(steps && { reproduction_steps: steps }),
-    ...(recs && { remediation: recs }),
+    ...(desc && { bug_description: mdToHtml(desc) }),
+    ...(steps && { reproduction_steps: mdToHtml(steps) }),
+    ...(recs && { remediation: mdToHtml(recs) }),
     ...(cvssScore && { cvss_score: parseFloat(cvssScore) }),
     ...(cvssVector && { cvss_vector: cvssVector }),
     ...(severity && { bug_criticality: severity }),

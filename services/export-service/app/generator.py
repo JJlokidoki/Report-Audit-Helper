@@ -83,6 +83,8 @@ def _build_contexts(report: dict, system_info: dict, summary: dict, checklist: l
         "executors": executors_str,
         "executors_list": system_info.get("executors", []),
         "software": software_list,
+        # Маркер для программного заполнения таблицы ПО
+        "software_table": "__software__",
     }
 
     vuln_names = [v.get("bug_name", "") for v in (vulnerabilities or [])]

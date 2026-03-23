@@ -94,6 +94,57 @@ def _merge_jinja_runs(template_path: Path) -> BytesIO:
     return buf
 
 
+def _find_table_by_marker(doc: Document, marker: str) -> tuple[int, int] | None:
+    """Ищет таблицу и строку содержащую маркер. Возвращает (table_index, row_index)."""
+    for ti, table in enumerate(doc.tables):
+        for ri, row in enumerate(table.rows):
+            for cell in row.cells:
+                if marker in cell.text:
+                    return ti, ri
+    return None
+
+
+def _fill_table_rows(doc_buf: BytesIO, marker: str,
+                     rows_data: list[list[str]]) -> BytesIO:
+    """Заполняет таблицу по маркеру.
+
+    Находит таблицу содержащую marker (например «__software__»),
+    клонирует строку с маркером для каждого элемента rows_data.
+    """
+    from copy import deepcopy
+
+    doc = Document(doc_buf)
+    found = _find_table_by_marker(doc, marker)
+    if not found or not rows_data:
+        buf = BytesIO()
+        doc.save(buf)
+        buf.seek(0)
+        return buf
+
+    table_index, template_row = found
+    table = doc.tables[table_index]
+    template_row_el = table.rows[template_row]._tr
+
+    for i, values in enumerate(rows_data):
+        if i == 0:
+            row = table.rows[template_row]
+        else:
+            new_tr = deepcopy(template_row_el)
+            table._tbl.append(new_tr)
+            row = table.rows[-1]
+
+        for ci, val in enumerate(values):
+            if ci < len(row.cells):
+                p = row.cells[ci].paragraphs[0]
+                p.text = ""
+                p.add_run(val)
+
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    return buf
+
+
 def _fill_checklist_table(doc_buf: BytesIO, checks: list[dict]) -> BytesIO:
     """Заполняет таблицу чеклиста программно, клонируя строку-шаблон."""
     from copy import deepcopy
@@ -135,7 +186,11 @@ def _fill_checklist_table(doc_buf: BytesIO, checks: list[dict]) -> BytesIO:
         ]
         for ci, val in enumerate(values):
             cell = row.cells[ci]
-            cell.paragraphs[0].text = val
+            p = cell.paragraphs[0]
+            p.text = ""
+            run = p.add_run(val)
+            if ci == len(values) - 1:
+                run.bold = True
 
     buf = BytesIO()
     doc.save(buf)
@@ -149,8 +204,9 @@ def fill_template(template_path: Path, context: dict, use_subdoc: bool = False) 
     doc = DocxTemplate(cleaned)
     enrich = enrich_context_with_subdoc if use_subdoc else enrich_context
 
-    # Извлекаем checks до рендера — они не нужны Jinja
+    # Извлекаем данные для программного заполнения таблиц — они не нужны Jinja
     checks = context.pop("checks", None)
+    software = context.pop("software", None)
 
     doc.render(enrich(context, doc))
     buf = BytesIO()
@@ -158,7 +214,12 @@ def fill_template(template_path: Path, context: dict, use_subdoc: bool = False) 
     buf.seek(0)
     buf = _patch_missing_ns(buf)
 
-    # Если есть checks — заполняем таблицу программно
+    # Программное заполнение таблиц по маркерам
+    if software:
+        rows = [[s.get("name", ""), s.get("description", "") or ""] for s in software]
+        buf = _fill_table_rows(buf, "__software__", rows)
+
+
     if checks:
         buf = _fill_checklist_table(buf, checks)
 

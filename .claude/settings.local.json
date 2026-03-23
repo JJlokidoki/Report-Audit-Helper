@@ -35,7 +35,8 @@
       "mcp__context7__query-docs",
       "Bash(git log:*)",
       "Bash(curl -s http://localhost:8001/api/reports/4/checklist)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(curl -s http://localhost:8001/api/reports/4/system-info)"
     ]
   }
 }

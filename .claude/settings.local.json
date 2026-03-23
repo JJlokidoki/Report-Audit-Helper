@@ -10,7 +10,27 @@
       "Bash(npx vitest:*)",
       "Bash(powershell -Command \"5173..5180 | ForEach-Object { $c = Get-NetTCPConnection -LocalPort $_ -State Listen -ErrorAction SilentlyContinue; if \\($c\\) { Write-Host \"\"Port $_ - OK\"\" } }\")",
       "Bash(grep -v \"^\\\\.$\")",
-      "Bash(ls -la /d/projects/pentest-audit-helper/.env*)"
+      "Bash(ls -la /d/projects/pentest-audit-helper/.env*)",
+      "Bash(source venv/Scripts/activate)",
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
+      "Bash(bash scripts/start.sh)",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue | Select-Object LocalAddress,LocalPort,OwningProcess\")",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue | Select-Object LocalAddress,LocalPort\")",
+      "Bash(curl -s http://localhost:8004/api/ai/settings)",
+      "Bash(python -m json.tool)",
+      "Bash(powershell -Command \"$p = Get-NetTCPConnection -LocalPort 8004 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess; if \\($p\\) { Stop-Process -Id $p -Force; Write-Host \"\"killed $p\"\" } else { Write-Host ''not running'' }\")",
+      "Bash(python -c \"from app.routers import settings; print\\(settings.router.routes\\)\")",
+      "Bash(curl -s http://localhost:8004/openapi.json)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(p\\) for p in d.get\\(''''paths'''',{}\\)]\")",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 8004 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }\")",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 8004 -State Listen -ErrorAction SilentlyContinue | Select-Object OwningProcess\")",
+      "Bash(powershell -Command \"taskkill /F /PID 200916\")",
+      "Bash(python -c \":*)",
+      "Bash(curl -s http://localhost:8001/api/reports)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8002/docs)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8002/api/export/4/word)",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 8002 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess\")"
     ]
   }
 }

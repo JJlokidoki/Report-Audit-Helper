@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.log import setup_logging
-from app.routers import generate, summary
+from app.routers import generate, settings, summary
 
 logger = logging.getLogger(__name__)
 
@@ -29,3 +29,4 @@ app.add_middleware(
 
 app.include_router(generate.router)
 app.include_router(summary.router)
+app.include_router(settings.router)

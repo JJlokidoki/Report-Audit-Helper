@@ -4,7 +4,7 @@ from zipfile import ZipFile
 
 from docxtpl import DocxTemplate
 
-from app.html_to_docx import enrich_context
+from app.html_to_docx import enrich_context, enrich_context_with_subdoc
 
 _DRAWING_NS = {
     "wp": "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
@@ -43,10 +43,11 @@ def _patch_missing_ns(buf: BytesIO) -> BytesIO:
     return out
 
 
-def fill_template(template_path: Path, context: dict) -> BytesIO:
+def fill_template(template_path: Path, context: dict, use_subdoc: bool = False) -> BytesIO:
     """Заполняет docxtpl шаблон контекстом, конвертируя HTML-поля в RichText."""
     doc = DocxTemplate(str(template_path))
-    doc.render(enrich_context(context, doc))
+    enrich = enrich_context_with_subdoc if use_subdoc else enrich_context
+    doc.render(enrich(context, doc))
     buf = BytesIO()
     doc.save(buf)
     buf.seek(0)

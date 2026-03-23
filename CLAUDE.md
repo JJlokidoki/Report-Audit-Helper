@@ -33,10 +33,10 @@ cd services/export-service && .\venv\Scripts\activate && uvicorn app.main:app --
 cd services/ai-vuln-generator && .\venv\Scripts\activate && uvicorn app.main:app --port 8004 --reload
 ```
 
-PowerShell helper script to start/restart all services (kills occupied ports first):
-```powershell
-pwsh .cursor/skills/start-services/scripts/start.ps1 -All
-# Or selectively: -Frontend, -ReportService, -ExportService
+Helper script to start/restart all services (kills occupied ports, loads `.env`):
+```bash
+bash scripts/start.sh            # all services
+bash scripts/start.sh --frontend --report  # selective
 ```
 
 ### Docker

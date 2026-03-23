@@ -34,15 +34,13 @@ async function insertImageWithCaption(view: EditorView, file: File, insertAt?: n
   const paraType = schema.nodes["paragraph"];
   if (!imageType || !paraType) return;
 
-  // TODO: каунтер картинок должен быть сквозной. Вохможно через шаблонизатор {{ image_n }}
-  let imgCount = 0;
-  state.doc.descendants((node) => { if (node.type === imageType) imgCount++; });
-  const n = imgCount + 1;
+  const baseName = file.name.replace(/\.[^.]+$/, "");
 
   const italicMark = schema.marks["italic"]?.create();
+  const caption_str = `Рисунок {{ next_fig() }}. ${baseName}`;
   const captionText = italicMark
-    ? schema.text(`Рисунок ${n}. `, [italicMark])
-    : schema.text(`Рисунок ${n}. `);
+    ? schema.text(caption_str, [italicMark])
+    : schema.text(caption_str);
 
   const img     = imageType.create({ src, align: "center" });
   const caption = paraType.create({ textAlign: "center" }, captionText);
@@ -53,7 +51,7 @@ async function insertImageWithCaption(view: EditorView, file: File, insertAt?: n
   const content = Fragment.fromArray([img, caption, next]);
   const tr = state.tr.replaceWith(from, to, content);
 
-  // Place cursor at end of caption text, ready to type description
+// Place cursor at end of caption text, ready to type description
   const captionEnd = from + img.nodeSize + 1 + captionText.nodeSize;
   tr.setSelection(TextSelection.create(tr.doc, captionEnd));
   view.dispatch(tr);

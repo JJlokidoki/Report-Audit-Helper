@@ -37,6 +37,21 @@ VULN_TEMPLATE = "05_vulnerability.docx"
 VULN_CHAPTER = 3
 
 
+class _Counter:
+    """Сквозной счётчик для нумерации таблиц/рисунков между шаблонами."""
+
+    def __init__(self, start: int = 0):
+        self._value = start
+
+    def __call__(self) -> int:
+        self._value += 1
+        return self._value
+
+    @property
+    def current(self) -> int:
+        return self._value
+
+
 async def _fetch(client: httpx.AsyncClient, path: str) -> dict:
     resp = await client.get(f"{settings.report_service_url}/api{path}")
     resp.raise_for_status()
@@ -44,9 +59,9 @@ async def _fetch(client: httpx.AsyncClient, path: str) -> dict:
     return resp.json()
 
 
-def _build_contexts(report: dict, system_info: dict, summary: dict, checklist: list) -> dict[str, dict]:
+def _build_contexts(report: dict, system_info: dict, summary: dict, checklist: list, vulnerabilities: list | None = None) -> dict[str, dict]:
     """Собирает контексты для каждого шаблона."""
-    executors_str = ", ".join(e["name"] for e in system_info.get("executors", []))
+    executors_str = "\n".join(e["name"] for e in system_info.get("executors", []))
     software_list = system_info.get("software", [])
     counts = summary.get("counts", {})
 
@@ -70,6 +85,8 @@ def _build_contexts(report: dict, system_info: dict, summary: dict, checklist: l
         "software": software_list,
     }
 
+    vuln_names = [v.get("bug_name", "") for v in (vulnerabilities or [])]
+
     test_results = {
         **base,
         "critical_count": counts.get("critical", 0),
@@ -78,6 +95,8 @@ def _build_contexts(report: dict, system_info: dict, summary: dict, checklist: l
         "low_count": counts.get("low", 0),
         "info_count": counts.get("info", 0),
         "total_count": sum(counts.values()),
+        "vulnerabilities": vulnerabilities or [],
+        "vuln_names": vuln_names,
     }
 
     def _check_result(check: dict) -> str:
@@ -102,6 +121,7 @@ def _vuln_context(vuln: dict, is_first: bool = False, vuln_index: int = 1) -> di
     return {
         "is_first": is_first,
         "chapter_num": VULN_CHAPTER,
+        "sub": lambda n, c=VULN_CHAPTER: f"{c}.{n}",
         "vuln_index": vuln_index,          # для подзаголовка «3.1 Название»
         "bug_name": vuln.get("bug_name", ""),
         "bug_criticality": vuln.get("bug_criticality", ""),
@@ -148,6 +168,12 @@ def _merge_docs(docs: list[BytesIO]) -> BytesIO:
         _prepend_page_break(sub)
         composer.append(sub)
 
+    # Сквозная нумерация страниц: убираем рестарт нумерации во всех секциях кроме первой
+    for i, section in enumerate(master.sections):
+        pg_num_type = section._sectPr.find(qn("w:pgNumType"))
+        if pg_num_type is not None and i > 0:
+            pg_num_type.attrib.pop(qn("w:start"), None)
+
     result = BytesIO()
     composer.save(result)
     result.seek(0)
@@ -174,8 +200,14 @@ async def generate_report(report_id: int) -> BytesIO:
         report_id, report_type, len(vulnerabilities),
     )
 
-    contexts = _build_contexts(report, system_info, summary, checklist)
+    contexts = _build_contexts(report, system_info, summary, checklist, vulnerabilities)
     filled_docs: list[BytesIO] = []
+
+    next_table = _Counter()
+    next_fig = _Counter()
+
+    def _shared_ctx(extra: dict) -> dict:
+        return {**extra, "next_table": next_table, "next_fig": next_fig}
 
     for filename, chapter_num in TEMPLATE_FILES:
         path = template_dir / filename
@@ -183,16 +215,16 @@ async def generate_report(report_id: int) -> BytesIO:
             logger.debug("Template not found, skipping: %s", filename)
             continue
         ctx = {**contexts.get(filename, {}), "chapter_num": chapter_num}
-        filled_docs.append(fill_template(path, ctx))
+        ctx["sub"] = lambda n, c=chapter_num: f"{c}.{n}" if c is not None else str(n)
+        filled_docs.append(fill_template(path, _shared_ctx(ctx)))
         logger.debug("Filled template: %s", filename)
 
         if filename == "04_test_results.docx":
             vuln_path = template_dir / VULN_TEMPLATE
             if vuln_path.exists() and vulnerabilities:
                 for i, vuln in enumerate(vulnerabilities):
-                    filled_docs.append(
-                        fill_template(vuln_path, _vuln_context(vuln, is_first=(i == 0), vuln_index=i + 1))
-                    )
+                    vuln_ctx = _vuln_context(vuln, is_first=(i == 0), vuln_index=i + 1)
+                    filled_docs.append(fill_template(vuln_path, _shared_ctx(vuln_ctx), use_subdoc=True))
                 logger.debug("Filled %d vulnerability templates", len(vulnerabilities))
 
     if not filled_docs:

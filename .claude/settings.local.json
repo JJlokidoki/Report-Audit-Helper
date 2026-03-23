@@ -42,7 +42,9 @@
       "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 8002 -State Listen -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; Start-Sleep -Seconds 3; Get-NetTCPConnection -LocalPort 8002 -State Listen -ErrorAction SilentlyContinue\")",
       "Bash(curl -s -w \"%{http_code}\" http://localhost:8002/api/export/4/word -o d:/projects/pentest-audit-helper/out/report_4_check.docx)",
       "Bash(curl -s http://localhost:8002/api/export/4/pdf)",
-      "Bash(curl -s http://localhost:8012/api/export/4/pdf)"
+      "Bash(curl -s http://localhost:8012/api/export/4/pdf)",
+      "Bash(curl -s http://localhost:8001/api/reports/5)",
+      "Bash(curl -s http://localhost:8001/api/reports/5/checklist)"
     ]
   }
 }

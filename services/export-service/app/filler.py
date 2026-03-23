@@ -5,6 +5,7 @@ from zipfile import ZipFile
 
 from docxtpl import DocxTemplate
 from docx import Document
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 from app.html_to_docx import enrich_context, enrich_context_with_subdoc
 
@@ -145,8 +146,43 @@ def _fill_table_rows(doc_buf: BytesIO, marker: str,
     return buf
 
 
+def _make_group_header_row(table, template_row_el, group_name: str, col_count: int):
+    """Создаёт строку-заголовок группы с объединёнными ячейками и жирным текстом по центру."""
+    from copy import deepcopy
+
+    new_tr = deepcopy(template_row_el)
+    table._tbl.append(new_tr)
+    row = table.rows[-1]
+
+    # Очищаем все ячейки перед merge (убираем лишние параграфы)
+    for ci in range(col_count):
+        cell = row.cells[ci]
+        for para in cell.paragraphs:
+            para.text = ""
+
+    # Объединяем все ячейки в строке
+    if col_count > 1:
+        row.cells[0].merge(row.cells[col_count - 1])
+
+    # Заполняем объединённую ячейку: жирный текст по центру
+    merged_cell = row.cells[0]
+    # Удаляем лишние пустые параграфы, оставшиеся после merge
+    while len(merged_cell.paragraphs) > 1:
+        last_p = merged_cell.paragraphs[-1]._element
+        last_p.getparent().remove(last_p)
+    p = merged_cell.paragraphs[0]
+    p.text = ""
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = p.add_run(group_name)
+    run.bold = True
+
+
 def _fill_checklist_table(doc_buf: BytesIO, checks: list[dict]) -> BytesIO:
-    """Заполняет таблицу чеклиста программно, клонируя строку-шаблон."""
+    """Заполняет таблицу чеклиста программно, клонируя строку-шаблон.
+
+    Поддерживает группировку: если category меняется между проверками,
+    вставляется строка-заголовок группы (объединённые ячейки, жирный шрифт).
+    """
     from copy import deepcopy
     from docx.enum.section import WD_ORIENT
 
@@ -155,7 +191,6 @@ def _fill_checklist_table(doc_buf: BytesIO, checks: list[dict]) -> BytesIO:
     # Альбомная ориентация для чеклиста
     for section in doc.sections:
         section.orientation = WD_ORIENT.LANDSCAPE
-        # Swap width/height если ещё не в landscape
         if section.page_width < section.page_height:
             section.page_width, section.page_height = section.page_height, section.page_width
 
@@ -166,17 +201,31 @@ def _fill_checklist_table(doc_buf: BytesIO, checks: list[dict]) -> BytesIO:
         return buf
 
     table = doc.tables[0]
-    # Строка 1 — шаблонная (пустая), клонируем её для каждой проверки
-    template_row_el = table.rows[1]._tr
+    # Сохраняем копию шаблонной строки ДО любых модификаций
+    template_row_el = deepcopy(table.rows[1]._tr)
+    col_count = len(table.columns)
 
-    for i, check in enumerate(checks):
-        if i == 0:
-            # Заполняем шаблонную строку первой проверкой
-            row = table.rows[1]
-        else:
-            new_tr = deepcopy(template_row_el)
-            table._tbl.append(new_tr)
-            row = table.rows[-1]
+    # Определяем нужны ли заголовки групп (больше одной категории)
+    categories = list(dict.fromkeys(c.get("category", "") for c in checks))
+    use_group_headers = len(categories) > 1
+
+    # Удаляем оригинальную шаблонную строку — будем добавлять через deepcopy
+    table._tbl.remove(table.rows[1]._tr)
+
+    current_category = None
+
+    for check in checks:
+        category = check.get("category", "")
+
+        # Вставляем заголовок группы при смене категории
+        if use_group_headers and category != current_category:
+            current_category = category
+            _make_group_header_row(table, template_row_el, category, col_count)
+
+        # Вставляем строку проверки
+        new_tr = deepcopy(template_row_el)
+        table._tbl.append(new_tr)
+        row = table.rows[-1]
 
         values = [
             check.get("check_id", ""),
@@ -185,12 +234,13 @@ def _fill_checklist_table(doc_buf: BytesIO, checks: list[dict]) -> BytesIO:
             check.get("result", ""),
         ]
         for ci, val in enumerate(values):
-            cell = row.cells[ci]
-            p = cell.paragraphs[0]
-            p.text = ""
-            run = p.add_run(val)
-            if ci == len(values) - 1:
-                run.bold = True
+            if ci < len(row.cells):
+                cell = row.cells[ci]
+                p = cell.paragraphs[0]
+                p.text = ""
+                run = p.add_run(val)
+                if ci == len(values) - 1:
+                    run.bold = True
 
     buf = BytesIO()
     doc.save(buf)

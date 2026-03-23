@@ -33,87 +33,134 @@ pentest-audit-helper/
 └── .cursor/rules/              # Правила для AI-агента
 ```
 
-## Требования
+## Запуск через Docker (рекомендуется)
+
+```bash
+# 1. Скопировать конфигурацию
+cp .env.example .env
+# Отредактировать .env — настроить LLM-провайдер, креды basic auth
+
+# 2. Запустить
+docker compose up --build
+
+# 3. Открыть http://localhost (логин/пароль из .env, по умолчанию admin/admin)
+```
+
+Маршрутизация через nginx — все сервисы доступны на порту 80:
+- `/api/reports/...`, `/api/vulnerabilities/...`, `/api/checklist/...` → Report Service
+- `/api/export/...` → Export Service
+- `/api/ai/...` → AI Vuln Generator
+- `/api/templates/...` → Export Service (управление шаблонами)
+
+```bash
+# Остановить
+docker compose down
+
+# Пересобрать один сервис
+docker compose up --build export-service
+
+# Логи конкретного сервиса
+docker compose logs -f report-service
+```
+
+PDF-экспорт работает только в Docker (используется LibreOffice).
+
+## Локальная разработка (без Docker)
+
+### Требования
 
 - Python 3.11+
 - Node.js 18+
-- Ollama (опционально, для AI-генерации)
 
-## Запуск
-
-### Backend-сервисы
+### Быстрый старт
 
 ```bash
-# Report Service
+# Запуск всех сервисов одной командой
+bash scripts/start.sh
+
+# Или выборочно
+bash scripts/start.sh --report --frontend
+```
+
+Скрипт завершает процессы на занятых портах, загружает `.env` и запускает сервисы в фоне.
+
+### Ручной запуск
+
+Каждый backend-сервис использует свой venv:
+
+```bash
+# Report Service (порт 8001)
 cd services/report-service
+python -m venv venv && source venv/Scripts/activate  # Windows
 pip install -r requirements.txt
 uvicorn app.main:app --port 8001 --reload
 
-# Наполнение БД тестовыми данными (один отчёт, SystemInfo, уязвимости, чеклист)
-python scripts/seed_test_data.py
-
-# Export Service
+# Export Service (порт 8002)
 cd services/export-service
+python -m venv venv && source venv/Scripts/activate
 pip install -r requirements.txt
 uvicorn app.main:app --port 8002 --reload
 
-# AI Vuln Generator
+# AI Vuln Generator (порт 8004)
 cd services/ai-vuln-generator
+python -m venv venv && source venv/Scripts/activate
 pip install -r requirements.txt
 uvicorn app.main:app --port 8004 --reload
 
-# Retest Service (заглушка)
-cd services/retest-service
-pip install -r requirements.txt
-uvicorn app.main:app --port 8003 --reload
-
-# TestGen Service (заглушка)
-cd services/testgen-service
-pip install -r requirements.txt
-uvicorn app.main:app --port 8005 --reload
+# Frontend (порт 5173)
+cd frontend
+npm install && npm run dev
 ```
 
-### Frontend
+### Тестовые данные
 
 ```bash
-cd frontend
-npm install
-npm run dev
+cd services/report-service
+python scripts/seed_test_data.py
 ```
 
 ### Тесты
 
 ```bash
-# Backend (для каждого сервиса)
-cd services/<service-name>
-pytest
+# Backend — для каждого сервиса
+cd services/report-service && python -m pytest tests/ -v
+cd services/export-service && python -m pytest tests/ -v
+
+# Один тест
+python -m pytest tests/test_reports.py::test_create_report -v
 
 # Frontend
-cd frontend
-npm test
+cd frontend && npm test
 ```
 
-## Конфигурация AI Vuln Generator
+## Конфигурация
+
+### Переменные окружения (.env)
 
 | Переменная | По умолчанию | Описание |
 |-----------|-------------|----------|
-| `LLM_PROVIDER` | `ollama` | Провайдер: `ollama` / `openai` / `custom` |
-| `LLM_MODEL` | `gemma3:27b-it-qat` | Модель |
+| `AUTH_USER` | `admin` | Логин basic auth (Docker) |
+| `AUTH_PASSWORD` | `admin` | Пароль basic auth (Docker) |
+| `LLM_PROVIDER` | `openai` | Провайдер: `ollama` / `openai` / `gigachat` / `custom` |
+| `LLM_MODEL` | `openai/gpt-oss-20b` | Модель |
 | `LLM_BASE_URL` | `http://localhost:11434` | URL API |
-| `LLM_API_KEY` | — | API-ключ (для внешних провайдеров) |
+| `LLM_API_KEY` | — | API-ключ |
 | `LLM_TEMPERATURE` | `0.1` | Температура |
 | `LLM_MAX_TOKENS` | `2048` | Лимит токенов |
 
-Подробная документация API для внешних интеграций: [`docs/api-ai-integration.md`](docs/api-ai-integration.md)
+При использовании Docker для доступа к LLM на хосте используйте `http://host.docker.internal:PORT`.
 
-## Переменные окружения Frontend
+### Frontend (.env.local)
 
-Создайте `frontend/.env.local` при необходимости переопределить адреса сервисов:
+Для локальной разработки создайте `frontend/.env.local`:
 
 ```env
 VITE_REPORT_API_URL=http://127.0.0.1:8001/api
 VITE_EXPORT_API_URL=http://127.0.0.1:8002
 VITE_AI_API_URL=http://127.0.0.1:8004
-# Включить TipTap rich-editor (поддержка вставки скриншотов):
 VITE_USE_RICH_EDITOR=true
 ```
+
+В Docker эти переменные не нужны — nginx проксирует всё через `/api/`.
+
+Подробная документация API: [`docs/api-ai-integration.md`](docs/api-ai-integration.md)

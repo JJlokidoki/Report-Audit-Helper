@@ -23,13 +23,12 @@ export async function downloadPdf(reportId: number): Promise<void> {
   triggerDownload(blob, `report_${reportId}.pdf`);
 }
 
-export async function previewPdf(reportId: number): Promise<void> {
+export async function previewPdf(reportId: number): Promise<string> {
   const resp = await exportClient.get(`/api/export/${reportId}/pdf`, {
     responseType: "arraybuffer",
   });
   const blob = new Blob([resp.data], { type: "application/pdf" });
-  const url = URL.createObjectURL(blob);
-  window.open(url, "_blank");
+  return URL.createObjectURL(blob);
 }
 
 /** @deprecated Use downloadWord instead */

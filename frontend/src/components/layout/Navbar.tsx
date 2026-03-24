@@ -51,6 +51,7 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
 
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [exporting, setExporting] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   type ExportAction = "preview-pdf" | "download-pdf" | "download-word";
   const [pendingAction, setPendingAction] = useState<ExportAction | null>(null);
 
@@ -66,14 +67,24 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
     enabled: !!reportId,
   });
 
+  const closePdfPreview = () => {
+    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    setPdfUrl(null);
+  };
+
   const runExport = async (action: ExportAction) => {
     if (!reportId) return;
     setMissingFields([]);
     setExporting(true);
     try {
-      if (action === "preview-pdf") await previewPdf(reportId);
-      else if (action === "download-pdf") await downloadPdf(reportId);
-      else await downloadWord(reportId);
+      if (action === "preview-pdf") {
+        const url = await previewPdf(reportId);
+        setPdfUrl(url);
+      } else if (action === "download-pdf") {
+        await downloadPdf(reportId);
+      } else {
+        await downloadWord(reportId);
+      }
       if (action !== "preview-pdf") toast.success("Отчёт скачан");
     } catch {
       toast.error("Ошибка экспорта");
@@ -165,12 +176,12 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
                 </li>
                 <li>
                   <button onClick={() => { handleExport("download-pdf"); (document.activeElement as HTMLElement)?.blur(); }} disabled={exporting}>
-                    Скачать PDF
+                    Экспорт PDF
                   </button>
                 </li>
                 <li>
                   <button onClick={() => { handleExport("download-word"); (document.activeElement as HTMLElement)?.blur(); }} disabled={exporting}>
-                    Скачать Word
+                    Экспорт Word
                   </button>
                 </li>
               </ul>
@@ -178,6 +189,36 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
           )}
         </div>
       </header>
+
+      {pdfUrl && (
+        <dialog open className="modal modal-open">
+          <div
+            className="modal-box bg-base-200 border border-base-300 rounded-sm p-0 flex flex-col"
+            style={{ width: "95vw", maxWidth: "95vw", height: "90vh" }}
+          >
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-base-300 shrink-0">
+              <span className="font-mono text-primary text-sm">›_</span>
+              <span className="font-display font-semibold tracking-wide text-sm">
+                Просмотр PDF
+              </span>
+              <div className="flex-1" />
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm btn-square text-base-content/50"
+                onClick={closePdfPreview}
+              >
+                ✕
+              </button>
+            </div>
+            <iframe
+              src={pdfUrl}
+              className="flex-1 w-full border-0"
+              title="PDF Preview"
+            />
+          </div>
+          <div className="modal-backdrop" onClick={closePdfPreview} />
+        </dialog>
+      )}
 
       {missingFields.length > 0 && (
         <dialog className="modal modal-open">

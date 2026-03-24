@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const exportClient = axios.create({
-  baseURL: import.meta.env.VITE_EXPORT_API_URL || "http://127.0.0.1:8002",
+  baseURL: import.meta.env.VITE_EXPORT_API_URL ?? "http://127.0.0.1:8002",
   headers: { "Content-Type": "application/json" },
 });
 

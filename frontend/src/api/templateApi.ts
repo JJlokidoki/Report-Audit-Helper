@@ -1,4 +1,4 @@
-const EXPORT_BASE = import.meta.env.VITE_EXPORT_API_URL || "http://127.0.0.1:8002";
+const EXPORT_BASE = import.meta.env.VITE_EXPORT_API_URL ?? "http://127.0.0.1:8002";
 
 export type TemplateMap = Record<string, string[]>;
 

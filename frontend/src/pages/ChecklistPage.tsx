@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getChecklist, updateCheck } from "../api/reportApi";
@@ -18,8 +18,6 @@ const STATUS_CLASS: Record<CheckStatus, string> = {
   not_tested: "",
 };
 
-const DEBOUNCE_MS = 500;
-
 function groupByCategory(checks: SecurityCheck[]): Map<string, SecurityCheck[]> {
   const map = new Map<string, SecurityCheck[]>();
   for (const c of checks) {
@@ -32,46 +30,22 @@ function groupByCategory(checks: SecurityCheck[]): Map<string, SecurityCheck[]> 
 function CheckRow({
   check,
   onSave,
+  disabled,
 }: {
   check: SecurityCheck;
   onSave: (status: string, notes: string | null) => void;
+  disabled: boolean;
 }) {
   const [status, setStatus] = useState(check.status);
   const [notes, setNotes] = useState(check.notes ?? "");
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    setStatus(check.status);
-    setNotes(check.notes ?? "");
-  }, [check.status, check.notes]);
-
-  const scheduleSave = useCallback(
-    (newStatus: string, newNotes: string | null) => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => {
-        onSave(newStatus, newNotes);
-        timerRef.current = null;
-      }, DEBOUNCE_MS);
-    },
-    [onSave]
-  );
 
   const handleStatusChange = (v: CheckStatus) => {
     setStatus(v);
-    scheduleSave(v, notes || null);
+    onSave(v, notes || null);
   };
 
-  const handleNotesChange = (v: string) => {
-    setNotes(v);
-    scheduleSave(status, v || null);
-  };
-
-  const handleBlur = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      onSave(status, notes || null);
-      timerRef.current = null;
-    }
+  const handleNotesBlur = () => {
+    onSave(status, notes || null);
   };
 
   return (
@@ -94,6 +68,7 @@ function CheckRow({
           className={`select select-bordered select-sm ${STATUS_CLASS[status]}`}
           value={status}
           onChange={(e) => handleStatusChange(e.target.value as CheckStatus)}
+          disabled={disabled}
         >
           {STATUS_OPTIONS.map((s) => (
             <option key={s} value={s}>{STATUS_LABEL[s]}</option>
@@ -105,8 +80,9 @@ function CheckRow({
           className="textarea textarea-bordered textarea-sm w-full min-h-[2rem]"
           rows={1}
           value={notes}
-          onChange={(e) => handleNotesChange(e.target.value)}
-          onBlur={handleBlur}
+          onChange={(e) => setNotes(e.target.value)}
+          onBlur={handleNotesBlur}
+          disabled={disabled}
         />
       </td>
     </tr>
@@ -192,6 +168,7 @@ export default function ChecklistPage() {
                       key={c.id}
                       check={c}
                       onSave={(status, notes) => handleSave(c.check_id, status, notes)}
+                      disabled={isLoading || checks.length === 0}
                     />
                   ))}
                 </tbody>

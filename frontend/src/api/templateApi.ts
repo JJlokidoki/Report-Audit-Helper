@@ -1,6 +1,11 @@
 const EXPORT_BASE = import.meta.env.VITE_EXPORT_API_URL ?? "http://127.0.0.1:8002";
 
-export type TemplateMap = Record<string, string[]>;
+export interface TemplateFile {
+  filename: string;
+  exists: boolean;
+}
+
+export type TemplateMap = Record<string, TemplateFile[]>;
 
 export async function getTemplates(): Promise<TemplateMap> {
   const resp = await fetch(`${EXPORT_BASE}/api/templates`);

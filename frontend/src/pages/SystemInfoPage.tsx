@@ -121,7 +121,7 @@ export default function SystemInfoPage() {
   });
 
   const availableExecutors = allExecutors.filter((e) => !executors.some((a) => a.id === e.id));
-  const availableSoftware = allSoftware.filter((s) => !software.some((a) => a.id === s.id));
+  const availableSoftware = allSoftware.filter((s) => !software.some((a) => a.id === s.id)).sort((a, b) => a.name.localeCompare(b.name));
 
   const handleAddExecutor = () => {
     const eid = parseInt(selectedExecutorId, 10);

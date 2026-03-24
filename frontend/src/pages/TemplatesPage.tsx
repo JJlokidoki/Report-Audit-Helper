@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { getTemplates, downloadTemplate, uploadTemplate } from "../api/templateApi";
+import { getTemplates, downloadTemplate, uploadTemplate, type TemplateFile } from "../api/templateApi";
 
 const TYPE_LABELS: Record<string, string> = {
   web: "WEB",
@@ -70,7 +70,9 @@ export default function TemplatesPage() {
           >
             {TYPE_LABELS[t]}
             {data?.[t]?.length ? (
-              <span className="ml-1.5 font-mono text-[10px] text-base-content/40">{data[t].length}</span>
+              <span className="ml-1.5 font-mono text-[10px] text-base-content/40">
+                {data[t].filter((f: TemplateFile) => f.exists).length}/{data[t].length}
+              </span>
             ) : null}
           </button>
         ))}
@@ -88,23 +90,31 @@ export default function TemplatesPage() {
             </tr>
           </thead>
           <tbody>
-            {files.map((name) => (
-              <tr key={name}>
-                <td className="font-mono text-sm">{name}</td>
+            {files.map((f) => (
+              <tr key={f.filename} className={f.exists ? "" : "opacity-40"}>
+                <td className="font-mono text-sm">
+                  {f.filename}
+                  {!f.exists && (
+                    <span className="ml-2 font-mono text-[10px] tracking-widest uppercase text-warning">
+                      отсутствует
+                    </span>
+                  )}
+                </td>
                 <td className="text-right">
                   <div className="flex gap-1 justify-end">
                     <button
                       className="btn btn-ghost btn-xs font-display tracking-wider"
-                      onClick={() => handleDownload(activeTab, name)}
+                      onClick={() => handleDownload(activeTab, f.filename)}
+                      disabled={!f.exists}
                     >
                       Скачать
                     </button>
                     <button
                       className="btn btn-ghost btn-xs font-display tracking-wider"
-                      onClick={() => handleReplace(activeTab, name)}
-                      disabled={uploading === name}
+                      onClick={() => handleReplace(activeTab, f.filename)}
+                      disabled={uploading === f.filename}
                     >
-                      {uploading === name ? "Загрузка…" : "Заменить"}
+                      {uploading === f.filename ? "Загрузка…" : "Заменить"}
                     </button>
                   </div>
                 </td>

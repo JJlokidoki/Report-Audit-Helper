@@ -13,15 +13,6 @@ ARG VITE_AI_API_URL=
 
 RUN npm run build
 
-FROM nginx:alpine
-
-RUN apk add --no-cache openssl
-
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
-
-EXPOSE 80
-
-ENTRYPOINT ["/docker-entrypoint.sh"]
+FROM alpine:3.20
+COPY --from=build /app/dist /dist
+CMD ["cp", "-r", "/dist/.", "/output/"]

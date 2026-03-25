@@ -139,6 +139,21 @@ cd frontend && npm test
 - Feature roadmap: `docs/task-list.md`
 - WSTG checklist data: `docs/wstg-table.md`
 
+## Backup & Migration
+
+```bash
+# Backup (dev)
+bash scripts/backup.sh
+
+# Backup (Docker — copies DB from volume, templates from container)
+bash scripts/backup.sh --docker
+
+# Restore
+bash scripts/restore.sh backups/backup-YYYY-MM-DD_HH-MM.tar.gz [--docker]
+```
+
+What gets backed up: SQLite DB (`report.db`), DOCX templates (`templates/`), `.env`. Output: `backups/backup-*.tar.gz` with SHA256 checksum.
+
 ## Backlog
 
 - Ongoing backlog of ideas and improvements: `docs/backlog.md`

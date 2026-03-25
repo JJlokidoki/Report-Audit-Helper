@@ -20,4 +20,5 @@ reports.json
 logs/
 
 out/
+backups/
 _tmp_*.py

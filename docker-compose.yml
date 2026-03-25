@@ -31,15 +31,28 @@ services:
 
   frontend:
     build: frontend
+    volumes:
+      - frontend-dist:/output
+
+  nginx:
+    build: nginx
     ports:
       - "80:80"
     environment:
       - AUTH_USER=${AUTH_USER:-admin}
       - AUTH_PASSWORD=${AUTH_PASSWORD:-admin}
+    volumes:
+      - frontend-dist:/usr/share/nginx/html:ro
     depends_on:
-      - report-service
-      - export-service
-      - ai-vuln-generator
+      frontend:
+        condition: service_completed_successfully
+      report-service:
+        condition: service_healthy
+      export-service:
+        condition: service_started
+      ai-vuln-generator:
+        condition: service_started
 
 volumes:
   report-db:
+  frontend-dist:

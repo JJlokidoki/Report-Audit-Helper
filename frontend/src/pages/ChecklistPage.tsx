@@ -77,8 +77,9 @@ function CheckRow({
       </td>
       <td>
         <textarea
-          className="textarea textarea-bordered textarea-sm w-full min-h-[2rem]"
+          className="textarea textarea-bordered textarea-sm w-full min-h-[2rem] resize-none break-words overflow-wrap-anywhere"
           rows={1}
+          style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           onBlur={handleNotesBlur}

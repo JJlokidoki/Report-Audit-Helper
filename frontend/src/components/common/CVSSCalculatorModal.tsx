@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { Severity } from "../../types";
+import Tag from "./Tag";
 
 interface CVSSResult {
   vector: string;
@@ -73,9 +74,9 @@ export default function CVSSCalculatorModal({ open, onClose, onApply, initialVec
           <div className="flex-1" />
           {current && (
             <div className="flex items-center gap-2">
-              <span className={`font-mono text-xs px-2 py-0.5 border ${SEV_STYLE[sev]}`}>
+              <Tag colorClass={SEV_STYLE[sev]} size="sm">
                 {current.score.toFixed(1)} — {current.severity.toUpperCase()}
-              </span>
+              </Tag>
               <span className="font-mono text-[10px] text-base-content/35 max-w-72 truncate">
                 {current.vector}
               </span>

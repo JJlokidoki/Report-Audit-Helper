@@ -3,6 +3,7 @@ import type { Severity } from "../../types";
 import { streamVuln, toBase64 } from "../../api/aiApi";
 import type { ChatMessage } from "../../api/aiApi";
 import { mdToHtml } from "../../utils/mdToHtml";
+import Tag from "./Tag";
 
 export interface VulnFields {
   bug_name?: string;
@@ -165,10 +166,10 @@ export default function AIGenerateModal({ open, onClose, onApply }: Props) {
         {images.length > 0 && (
           <div className="flex gap-2 flex-wrap">
             {images.map((f, i) => (
-              <span key={i} className="inline-flex items-center gap-1 font-mono text-[10px] tracking-widest px-1.5 py-0.5 border bg-base-content/8 text-base-content/50 border-base-content/20">
+              <Tag key={i} colorClass="bg-base-content/8 text-base-content/50 border-base-content/20" size="sm" className="inline-flex items-center gap-1">
                 {f.name}
                 <button type="button" className="text-error/60 hover:text-error" onClick={() => setImages((p) => p.filter((_, j) => j !== i))}>×</button>
-              </span>
+              </Tag>
             ))}
           </div>
         )}

@@ -1,4 +1,5 @@
 import type { AutomationLevel } from "../../types";
+import Tag from "./Tag";
 
 const STYLES: Record<AutomationLevel, string> = {
   fully: "bg-success/15 text-success border-success/40",
@@ -16,8 +17,6 @@ const LABELS: Record<AutomationLevel, string> = {
 
 export default function AutomationBadge({ level }: { level: AutomationLevel }) {
   return (
-    <span className={`inline-block font-mono text-[10px] tracking-wide px-1.5 py-0.5 border ${STYLES[level]}`}>
-      {LABELS[level]}
-    </span>
+    <Tag colorClass={STYLES[level]} size="sm">{LABELS[level]}</Tag>
   );
 }

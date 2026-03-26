@@ -2,6 +2,8 @@ import { useState, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { getTemplates, downloadTemplate, uploadTemplate, type TemplateFile } from "../api/templateApi";
+import PageHeader from "../components/common/PageHeader";
+import EmptyState from "../components/common/EmptyState";
 
 const TYPE_LABELS: Record<string, string> = {
   web: "WEB",
@@ -57,7 +59,7 @@ export default function TemplatesPage() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="font-display text-2xl font-semibold tracking-wide mb-6">Шаблоны отчётов</h1>
+      <PageHeader title="Шаблоны отчётов" className="mb-6" />
 
       {/* Tabs */}
       <div role="tablist" className="tabs tabs-bordered mb-4">
@@ -80,13 +82,13 @@ export default function TemplatesPage() {
 
       {/* File list */}
       {files.length === 0 ? (
-        <div className="text-sm text-base-content/40 py-8 text-center">// шаблоны не найдены</div>
+        <EmptyState message="шаблоны не найдены" />
       ) : (
         <table className="table table-sm w-full">
           <thead>
             <tr>
-              <th className="font-mono text-[10px] tracking-[0.2em] uppercase text-base-content/35">Файл</th>
-              <th className="font-mono text-[10px] tracking-[0.2em] uppercase text-base-content/35 w-48 text-right">Действия</th>
+              <th className="label-section">Файл</th>
+              <th className="label-section w-48 text-right">Действия</th>
             </tr>
           </thead>
           <tbody>

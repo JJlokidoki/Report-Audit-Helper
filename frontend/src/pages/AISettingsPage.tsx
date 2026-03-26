@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { getAiSettings, updateAiSettings, checkAiHealth } from "../api/aiApi";
 import type { AISettingsUpdate } from "../api/aiApi";
+import PageHeader from "../components/common/PageHeader";
 
 export default function AISettingsPage() {
   const qc = useQueryClient();
@@ -53,7 +54,7 @@ export default function AISettingsPage() {
 
   return (
     <div className="max-w-4xl">
-      <h1 className="font-display text-2xl font-semibold tracking-wide mb-6">Настройки AI</h1>
+      <PageHeader title="Настройки AI" className="mb-6" />
 
       <div className="grid grid-cols-3 gap-x-4 gap-y-3">
         <div className="form-control">

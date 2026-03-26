@@ -12,7 +12,9 @@ import {
   getSoftwareList,
   setSoftware,
 } from "../api/reportApi";
-import type { SystemInfo, Executor, Software, SoftwareLabel } from "../types";
+import type { SystemInfo, Executor, Software, ReportType } from "../types";
+import { SOFTWARE_LABEL_STYLES, REPORT_TYPE_RECOMMENDED_LABELS } from "../utils/labelConfig";
+import Tag from "../components/common/Tag";
 
 const QUAL_OPTIONS = [
   ["Базовый", "Базовый"],
@@ -29,22 +31,6 @@ const KNOWLEDGE_OPTIONS = [
   ["Белый ящик", "Белый ящик"],
 ] as const;
 
-const REPORT_TYPE_LABELS: Record<string, SoftwareLabel[]> = {
-  web: ["web", "network", "general"],
-  ios: ["mobile", "general"],
-  android: ["mobile", "general"],
-  ai: ["ai", "general"],
-  iot: ["iot", "network", "general"],
-};
-
-const LABEL_DISPLAY: Record<SoftwareLabel, { text: string; style: string }> = {
-  web: { text: "WEB", style: "bg-primary/15 text-primary border-primary/50" },
-  mobile: { text: "Mobile", style: "bg-accent/15 text-accent border-accent/50" },
-  network: { text: "Сети", style: "bg-info/15 text-info border-info/50" },
-  ai: { text: "AI", style: "bg-secondary/15 text-secondary border-secondary/50" },
-  iot: { text: "IoT", style: "bg-warning/15 text-warning border-warning/50" },
-  general: { text: "Общие", style: "bg-base-content/8 text-base-content/50 border-base-content/20" },
-};
 
 type FormState = Pick<
   SystemInfo,
@@ -146,7 +132,7 @@ export default function SystemInfoPage() {
   const availableExecutors = allExecutors.filter((e) => !executors.some((a) => a.id === e.id));
   const availableSoftware = allSoftware.filter((s) => !software.some((a) => a.id === s.id)).sort((a, b) => a.name.localeCompare(b.name));
 
-  const reportLabels = new Set(REPORT_TYPE_LABELS[report?.report_type ?? ""] ?? []);
+  const reportLabels = new Set(report?.report_type ? REPORT_TYPE_RECOMMENDED_LABELS[report.report_type as ReportType] : []);
   const matchesType = (sw: Software) => sw.labels?.some((l) => reportLabels.has(l));
   const recommended = availableSoftware.filter(matchesType);
   const other = availableSoftware.filter((s) => !matchesType(s));
@@ -328,8 +314,8 @@ export default function SystemInfoPage() {
                   <td>
                     <div className="flex gap-1">
                       {(s.labels ?? []).map((l) => {
-                        const d = LABEL_DISPLAY[l];
-                        return d ? <span key={l} className={`font-mono text-[9px] tracking-widest px-1 py-0.5 border ${d.style}`}>{d.text}</span> : null;
+                        const d = SOFTWARE_LABEL_STYLES[l];
+                        return d ? <Tag key={l} colorClass={d.style} size="xs">{d.text}</Tag> : null;
                       })}
                     </div>
                   </td>
@@ -347,7 +333,7 @@ export default function SystemInfoPage() {
                 <optgroup label="Рекомендуемые">
                   {recommended.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.name}{(s.labels ?? []).length > 0 ? ` [${(s.labels ?? []).map(l => LABEL_DISPLAY[l]?.text ?? l).join(", ")}]` : ""}
+                      {s.name}{(s.labels ?? []).length > 0 ? ` [${(s.labels ?? []).map(l => SOFTWARE_LABEL_STYLES[l]?.text ?? l).join(", ")}]` : ""}
                     </option>
                   ))}
                 </optgroup>
@@ -356,7 +342,7 @@ export default function SystemInfoPage() {
                 <optgroup label="Остальные">
                   {other.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.name}{(s.labels ?? []).length > 0 ? ` [${(s.labels ?? []).map(l => LABEL_DISPLAY[l]?.text ?? l).join(", ")}]` : ""}
+                      {s.name}{(s.labels ?? []).length > 0 ? ` [${(s.labels ?? []).map(l => SOFTWARE_LABEL_STYLES[l]?.text ?? l).join(", ")}]` : ""}
                     </option>
                   ))}
                 </optgroup>

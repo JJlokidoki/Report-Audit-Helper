@@ -4,15 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { getReport, getSystemInfo } from "../../api/reportApi";
 import { downloadWord, downloadPdf, previewPdf } from "../../api/exportApi";
-import type { SystemInfo } from "../../types";
-
-const TYPE_LABELS: Record<string, string> = {
-  web: "WEB",
-  ios: "iOS",
-  android: "Android",
-  ai: "AI",
-  iot: "IoT",
-};
+import type { ReportType, SystemInfo } from "../../types";
+import { REPORT_TYPE_STYLES } from "../../utils/labelConfig";
+import ModalShell from "../common/ModalShell";
+import Tag from "../common/Tag";
 
 const REQUIRED_FIELDS: { key: keyof SystemInfo; label: string }[] = [
   { key: "asName", label: "Название АС" },
@@ -124,9 +119,9 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
               <span className="text-sm text-base-content/70 font-medium max-w-56 truncate">
                 {report.name}
               </span>
-              <span className="font-mono text-[11px] px-1.5 py-0.5 border border-primary/40 text-primary bg-primary/8 tracking-widest uppercase">
-                {TYPE_LABELS[report.report_type] ?? report.report_type}
-              </span>
+              <Tag colorClass={REPORT_TYPE_STYLES[report.report_type as ReportType]?.style ?? ""}>
+                {REPORT_TYPE_STYLES[report.report_type as ReportType]?.text ?? report.report_type}
+              </Tag>
             </div>
           )}
         </div>
@@ -190,64 +185,38 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
         </div>
       </header>
 
-      {pdfUrl && (
-        <dialog open className="modal modal-open">
-          <div
-            className="modal-box bg-base-200 border border-base-300 rounded-sm p-0 flex flex-col"
-            style={{ width: "95vw", maxWidth: "95vw", height: "90vh" }}
-          >
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-base-300 shrink-0">
-              <span className="font-mono text-primary text-sm">›_</span>
-              <span className="font-display font-semibold tracking-wide text-sm">
-                Просмотр PDF
-              </span>
-              <div className="flex-1" />
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm btn-square text-base-content/50"
-                onClick={closePdfPreview}
-              >
-                ✕
-              </button>
-            </div>
-            <iframe
-              src={pdfUrl}
-              className="flex-1 w-full border-0"
-              title="PDF Preview"
-            />
-          </div>
-          <div className="modal-backdrop" onClick={closePdfPreview} />
-        </dialog>
-      )}
+      <ModalShell open={!!pdfUrl} onClose={closePdfPreview} title="Просмотр PDF" fullHeight>
+        <iframe src={pdfUrl!} className="flex-1 w-full border-0" title="PDF Preview" />
+      </ModalShell>
 
-      {missingFields.length > 0 && (
-        <dialog className="modal modal-open">
-          <div className="modal-box max-w-md">
-            <h3 className="font-bold text-base mb-3">Незаполненные поля</h3>
-            <p className="text-sm text-base-content/70 mb-3">
-              Следующие поля не заполнены, произвести экспорт отчёта?
-            </p>
-            <ul className="list-disc list-inside space-y-1 mb-4">
-              {missingFields.map((f) => (
-                <li key={f} className="text-sm text-warning">{f}</li>
-              ))}
-            </ul>
-            <div className="modal-action mt-0">
-              <button className="btn btn-sm" onClick={() => { setMissingFields([]); setPendingAction(null); }}>
-                Отмена
-              </button>
-              <button
-                className="btn btn-sm btn-primary"
-                onClick={() => { if (pendingAction) runExport(pendingAction); }}
-                disabled={exporting}
-              >
-                {exporting ? <span className="loading loading-spinner loading-xs" /> : "Экспортировать"}
-              </button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={() => { setMissingFields([]); setPendingAction(null); }} />
-        </dialog>
-      )}
+      <ModalShell
+        open={missingFields.length > 0}
+        onClose={() => { setMissingFields([]); setPendingAction(null); }}
+        title="Незаполненные поля"
+        actions={
+          <>
+            <button className="btn btn-sm" onClick={() => { setMissingFields([]); setPendingAction(null); }}>
+              Отмена
+            </button>
+            <button
+              className="btn btn-sm btn-primary"
+              onClick={() => { if (pendingAction) runExport(pendingAction); }}
+              disabled={exporting}
+            >
+              {exporting ? <span className="loading loading-spinner loading-xs" /> : "Экспортировать"}
+            </button>
+          </>
+        }
+      >
+        <p className="text-sm text-base-content/70 mb-3">
+          Следующие поля не заполнены, произвести экспорт отчёта?
+        </p>
+        <ul className="list-disc list-inside space-y-1">
+          {missingFields.map((f) => (
+            <li key={f} className="text-sm text-warning">{f}</li>
+          ))}
+        </ul>
+      </ModalShell>
     </>
   );
 }

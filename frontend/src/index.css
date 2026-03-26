@@ -184,6 +184,16 @@ body {
   letter-spacing: 0.05em;
 }
 
+/* ── Label section utility ─────────────────────────────── */
+.label-section {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: oklch(from var(--color-base-content) l c h / 0.35);
+  user-select: none;
+}
+
 /* ── TipTap editor content ──────────────────────────────── */
 .tiptap {
   outline: none;

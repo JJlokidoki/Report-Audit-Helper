@@ -1,4 +1,5 @@
 import type { Severity } from "../../types";
+import Tag from "./Tag";
 
 const STYLES: Record<Severity, string> = {
   critical: "bg-error/15 text-error border-error/50",
@@ -18,10 +19,6 @@ const LABELS: Record<Severity, string> = {
 
 export default function SeverityBadge({ severity }: { severity: Severity }) {
   return (
-    <span
-      className={`inline-block font-mono text-[10px] tracking-widest px-1.5 py-0.5 border ${STYLES[severity]}`}
-    >
-      {LABELS[severity]}
-    </span>
+    <Tag colorClass={STYLES[severity]} size="sm">{LABELS[severity]}</Tag>
   );
 }

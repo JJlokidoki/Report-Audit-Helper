@@ -6,6 +6,11 @@ import {
   getSoftwareList, createSoftware, updateSoftware, deleteSoftware,
 } from "../api/reportApi";
 import type { Executor, Software, SoftwareLabel } from "../types";
+import { SOFTWARE_LABEL_STYLES, SOFTWARE_LABEL_LIST } from "../utils/labelConfig";
+import PageHeader from "../components/common/PageHeader";
+import EmptyState from "../components/common/EmptyState";
+import Tag from "../components/common/Tag";
+import ModalShell from "../components/common/ModalShell";
 
 function useConfirm() {
   const [pending, setPending] = useState<(() => void) | null>(null);
@@ -97,7 +102,7 @@ function ExecutorsSection() {
             />
           ))}
           {executors.length === 0 && (
-            <tr><td colSpan={2} className="text-center text-base-content/40 text-sm">Нет исполнителей</td></tr>
+            <tr><td colSpan={2}><EmptyState message="нет исполнителей" className="py-4" /></td></tr>
           )}
         </tbody>
       </table>
@@ -114,32 +119,26 @@ function ExecutorsSection() {
         </button>
       </div>
 
-      {confirm.pending && (
-        <dialog className="modal modal-open">
-          <div className="modal-box max-w-sm">
-            <p className="text-sm">Удалить исполнителя?</p>
-            <div className="modal-action mt-3">
-              <button className="btn btn-sm" onClick={confirm.cancel}>Отмена</button>
-              <button className="btn btn-sm btn-error" onClick={confirm.confirm}>Удалить</button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={confirm.cancel} />
-        </dialog>
-      )}
+      <ModalShell
+        open={!!confirm.pending}
+        onClose={confirm.cancel}
+        title="Подтверждение"
+        maxWidth="max-w-sm"
+        actions={
+          <>
+            <button className="btn btn-sm" onClick={confirm.cancel}>Отмена</button>
+            <button className="btn btn-sm btn-error" onClick={confirm.confirm}>Удалить</button>
+          </>
+        }
+      >
+        <p className="text-sm">Удалить исполнителя?</p>
+      </ModalShell>
     </div>
   );
 }
 
 // ─── Software ────────────────────────────────────────────────────────────────
 
-const LABEL_OPTIONS: { value: SoftwareLabel; label: string; style: string }[] = [
-  { value: "web", label: "WEB", style: "bg-primary/15 text-primary border-primary/50" },
-  { value: "mobile", label: "Мобильные", style: "bg-accent/15 text-accent border-accent/50" },
-  { value: "network", label: "Сети", style: "bg-info/15 text-info border-info/50" },
-  { value: "ai", label: "AI", style: "bg-secondary/15 text-secondary border-secondary/50" },
-  { value: "iot", label: "IoT", style: "bg-warning/15 text-warning border-warning/50" },
-  { value: "general", label: "Общие", style: "bg-base-content/8 text-base-content/50 border-base-content/20" },
-];
 
 function LabelToggles({ selected, onChange }: { selected: SoftwareLabel[]; onChange: (labels: SoftwareLabel[]) => void }) {
   const toggle = (val: SoftwareLabel) => {
@@ -147,16 +146,21 @@ function LabelToggles({ selected, onChange }: { selected: SoftwareLabel[]; onCha
   };
   return (
     <div className="flex flex-wrap gap-1">
-      {LABEL_OPTIONS.map((opt) => (
+      {SOFTWARE_LABEL_LIST.map((opt) => (
         <button
           key={opt.value}
           type="button"
-          className={`font-mono text-[10px] tracking-widest px-1.5 py-0.5 border cursor-pointer transition-opacity ${
-            selected.includes(opt.value) ? opt.style : "bg-base-content/5 text-base-content/30 border-base-content/15 opacity-50"
+          className={`cursor-pointer transition-opacity ${
+            selected.includes(opt.value) ? "" : "opacity-50"
           }`}
           onClick={() => toggle(opt.value)}
         >
-          {opt.label}
+          <Tag
+            colorClass={selected.includes(opt.value) ? opt.style : "bg-base-content/5 text-base-content/30 border-base-content/15"}
+            size="sm"
+          >
+            {opt.text}
+          </Tag>
         </button>
       ))}
     </div>
@@ -168,12 +172,10 @@ function SoftwareLabels({ labels }: { labels: SoftwareLabel[] }) {
   return (
     <>
       {labels.map((l) => {
-        const opt = LABEL_OPTIONS.find((o) => o.value === l);
+        const opt = SOFTWARE_LABEL_STYLES[l];
         if (!opt) return null;
         return (
-          <span key={l} className={`font-mono text-[9px] tracking-widest px-1 py-0.5 border ${opt.style}`}>
-            {opt.label}
-          </span>
+          <Tag key={l} colorClass={opt.style} size="xs">{opt.text}</Tag>
         );
       })}
     </>
@@ -221,7 +223,7 @@ function SoftwareRow({ sw, onSaved, onDelete }: { sw: Software; onSaved: () => v
       <td>
         <div className="flex items-center gap-1.5 flex-wrap">
           {sw.name}
-          {sw.is_preset && <span className="font-mono text-[9px] tracking-widest px-1 py-0.5 border bg-base-content/8 text-base-content/50 border-base-content/20">preset</span>}
+          {sw.is_preset && <Tag colorClass="bg-base-content/8 text-base-content/50 border-base-content/20" size="xs">preset</Tag>}
           <SoftwareLabels labels={sw.labels ?? []} />
         </div>
       </td>
@@ -272,24 +274,34 @@ function SoftwareSection() {
 
       {/* Filter row */}
       <div className="flex items-center gap-1.5 mb-3">
-        <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-base-content/35 mr-1">Фильтр</span>
+        <span className="label-section mr-1">Фильтр</span>
         <button
-          className={`font-mono text-[10px] tracking-widest px-1.5 py-0.5 border cursor-pointer transition-opacity ${
-            filterLabel === null ? "bg-primary/15 text-primary border-primary/50" : "bg-base-content/5 text-base-content/30 border-base-content/15 opacity-50"
+          className={`cursor-pointer transition-opacity ${
+            filterLabel === null ? "" : "opacity-50"
           }`}
           onClick={() => setFilterLabel(null)}
         >
-          Все
+          <Tag
+            colorClass={filterLabel === null ? "bg-primary/15 text-primary border-primary/50" : "bg-base-content/5 text-base-content/30 border-base-content/15"}
+            size="sm"
+          >
+            Все
+          </Tag>
         </button>
-        {LABEL_OPTIONS.map((opt) => (
+        {SOFTWARE_LABEL_LIST.map((opt) => (
           <button
             key={opt.value}
-            className={`font-mono text-[10px] tracking-widest px-1.5 py-0.5 border cursor-pointer transition-opacity ${
-              filterLabel === opt.value ? opt.style : "bg-base-content/5 text-base-content/30 border-base-content/15 opacity-50"
+            className={`cursor-pointer transition-opacity ${
+              filterLabel === opt.value ? "" : "opacity-50"
             }`}
             onClick={() => setFilterLabel(filterLabel === opt.value ? null : opt.value)}
           >
-            {opt.label}
+            <Tag
+              colorClass={filterLabel === opt.value ? opt.style : "bg-base-content/5 text-base-content/30 border-base-content/15"}
+              size="sm"
+            >
+              {opt.text}
+            </Tag>
           </button>
         ))}
       </div>
@@ -307,9 +319,7 @@ function SoftwareSection() {
               />
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={4} className="text-center text-base-content/40 text-sm">
-                {filterLabel ? "// нет ПО с такой меткой" : "// нет записей"}
-              </td></tr>
+              <tr><td colSpan={4}><EmptyState message={filterLabel ? "нет ПО с такой меткой" : "нет записей"} className="py-4" /></td></tr>
             )}
           </tbody>
         </table>
@@ -323,18 +333,20 @@ function SoftwareSection() {
         <button className="btn btn-sm btn-primary" onClick={handleAdd} disabled={addMut.isPending}>Добавить</button>
       </div>
 
-      {confirm.pending && (
-        <dialog className="modal modal-open">
-          <div className="modal-box max-w-sm">
-            <p className="text-sm">Удалить инструмент?</p>
-            <div className="modal-action mt-3">
-              <button className="btn btn-sm" onClick={confirm.cancel}>Отмена</button>
-              <button className="btn btn-sm btn-error" onClick={confirm.confirm}>Удалить</button>
-            </div>
-          </div>
-          <div className="modal-backdrop" onClick={confirm.cancel} />
-        </dialog>
-      )}
+      <ModalShell
+        open={!!confirm.pending}
+        onClose={confirm.cancel}
+        title="Подтверждение"
+        maxWidth="max-w-sm"
+        actions={
+          <>
+            <button className="btn btn-sm" onClick={confirm.cancel}>Отмена</button>
+            <button className="btn btn-sm btn-error" onClick={confirm.confirm}>Удалить</button>
+          </>
+        }
+      >
+        <p className="text-sm">Удалить инструмент?</p>
+      </ModalShell>
     </div>
   );
 }
@@ -344,7 +356,7 @@ function SoftwareSection() {
 export default function DirectoriesPage() {
   return (
     <div className="max-w-4xl space-y-8">
-      <h1 className="font-display text-2xl font-semibold tracking-wide">Справочники</h1>
+      <PageHeader title="Справочники" />
       <ExecutorsSection />
       <div className="divider" />
       <SoftwareSection />

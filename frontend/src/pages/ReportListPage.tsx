@@ -12,23 +12,12 @@ import {
 import toast from "react-hot-toast";
 import { getReports, createReport, deleteReport } from "../api/reportApi";
 import type { Report, ReportListItem, ReportType } from "../types";
+import { REPORT_TYPE_STYLES } from "../utils/labelConfig";
 import ConfirmModal from "../components/common/ConfirmModal";
-
-const TYPE_LABELS: Record<ReportType, string> = {
-  web: "WEB",
-  ios: "iOS",
-  android: "Android",
-  ai: "AI",
-  iot: "IoT",
-};
-
-const TYPE_COLORS: Record<ReportType, string> = {
-  web: "text-primary border-primary/40 bg-primary/8",
-  ios: "text-accent border-accent/40 bg-accent/8",
-  android: "text-success border-success/40 bg-success/8",
-  ai: "text-secondary border-secondary/40 bg-secondary/8",
-  iot: "text-warning border-warning/40 bg-warning/8",
-};
+import ModalShell from "../components/common/ModalShell";
+import PageHeader from "../components/common/PageHeader";
+import EmptyState from "../components/common/EmptyState";
+import Tag from "../components/common/Tag";
 
 const REPORT_TYPES: ReportType[] = ["web", "ios", "android", "ai", "iot"];
 
@@ -88,9 +77,7 @@ export default function ReportListPage() {
       cell: ({ getValue }) => {
         const t = getValue();
         return (
-          <span className={`font-mono text-[11px] tracking-widest px-1.5 py-0.5 border ${TYPE_COLORS[t]}`}>
-            {TYPE_LABELS[t]}
-          </span>
+          <Tag colorClass={REPORT_TYPE_STYLES[t].style}>{REPORT_TYPE_STYLES[t].text}</Tag>
         );
       },
     }),
@@ -143,14 +130,7 @@ export default function ReportListPage() {
 
   return (
     <div className="max-w-5xl">
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-semibold tracking-wide text-base-content mb-1">
-          Отчёты
-        </h1>
-        <p className="text-sm text-base-content/45 font-mono">
-          // управление аудитами безопасности
-        </p>
-      </div>
+      <PageHeader title="Отчёты" subtitle="управление аудитами безопасности" className="mb-5" />
 
       <div className="flex flex-wrap gap-3 items-center mb-5">
         <select
@@ -161,7 +141,7 @@ export default function ReportListPage() {
           <option value="">Все типы</option>
           {REPORT_TYPES.map((t) => (
             <option key={t} value={t}>
-              {TYPE_LABELS[t]}
+              {REPORT_TYPE_STYLES[t].text}
             </option>
           ))}
         </select>
@@ -180,8 +160,8 @@ export default function ReportListPage() {
           <span className="font-mono text-sm">Загрузка...</span>
         </div>
       ) : reports.length === 0 ? (
-        <div className="border border-base-300 bg-base-200/30 p-12 text-center">
-          <p className="font-mono text-base-content/35 text-sm">// отчётов не найдено</p>
+        <div className="border border-base-300 bg-base-200/30">
+          <EmptyState message="отчётов не найдено" />
         </div>
       ) : (
         <div className="overflow-x-auto border border-base-300 bg-base-200/20">
@@ -212,70 +192,67 @@ export default function ReportListPage() {
         </div>
       )}
 
-      {createModalOpen && (
-        <dialog open className="modal modal-open">
-          <div className="modal-box bg-base-200 border border-base-300 rounded-sm max-w-md">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="font-mono text-primary">›_</span>
-              <h3 className="font-display font-semibold tracking-wide">Новый отчёт</h3>
-            </div>
-            <div className="grid grid-cols-3 gap-x-3 gap-y-3 mb-5">
-              <div className="form-control col-span-2">
-                <label className="label py-1">
-                  <span className="label-text font-mono text-xs text-base-content/50 tracking-wider uppercase">
-                    Название
-                  </span>
-                </label>
-                <input
-                  type="text"
-                  className="input input-bordered w-full"
-                  value={createName}
-                  onChange={(e) => setCreateName(e.target.value)}
-                  placeholder="Название проекта"
-                  autoFocus
-                  onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-                />
-              </div>
-              <div className="form-control">
-                <label className="label py-1">
-                  <span className="label-text font-mono text-xs text-base-content/50 tracking-wider uppercase">
-                    Тип
-                  </span>
-                </label>
-                <select
-                  className="select select-bordered w-full font-mono"
-                  value={createType}
-                  onChange={(e) => setCreateType(e.target.value as ReportType)}
-                >
-                  {REPORT_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {TYPE_LABELS[t]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="modal-action gap-2">
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm font-mono"
-                onClick={() => setCreateModalOpen(false)}
-              >
-                Отмена
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary btn-sm font-display tracking-wider"
-                onClick={handleCreate}
-                disabled={createMutation.isPending}
-              >
-                {createMutation.isPending ? "Создание…" : "Создать"}
-              </button>
-            </div>
+      <ModalShell
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        title="Новый отчёт"
+        actions={
+          <>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm font-mono"
+              onClick={() => setCreateModalOpen(false)}
+            >
+              Отмена
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm font-display tracking-wider"
+              onClick={handleCreate}
+              disabled={createMutation.isPending}
+            >
+              {createMutation.isPending ? <span className="loading loading-spinner loading-xs" /> : "›_ Создать"}
+            </button>
+          </>
+        }
+      >
+        <div className="grid grid-cols-3 gap-x-3 gap-y-3 mb-5">
+          <div className="form-control col-span-2">
+            <label className="label py-1">
+              <span className="label-text font-mono text-xs text-base-content/50 tracking-wider uppercase">
+                Название
+              </span>
+            </label>
+            <input
+              type="text"
+              className="input input-bordered w-full"
+              value={createName}
+              onChange={(e) => setCreateName(e.target.value)}
+              placeholder="Название проекта"
+              autoFocus
+              onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+            />
           </div>
-          <div className="modal-backdrop" onClick={() => setCreateModalOpen(false)} />
-        </dialog>
-      )}
+          <div className="form-control">
+            <label className="label py-1">
+              <span className="label-text font-mono text-xs text-base-content/50 tracking-wider uppercase">
+                Тип
+              </span>
+            </label>
+            <select
+              className="select select-bordered w-full font-mono"
+              value={createType}
+              onChange={(e) => setCreateType(e.target.value as ReportType)}
+            >
+              {REPORT_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {REPORT_TYPE_STYLES[t].text}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </ModalShell>
 
       <ConfirmModal
         open={!!deleteTarget}

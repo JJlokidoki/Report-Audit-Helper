@@ -118,6 +118,17 @@ export const checkArchiveHealth = () => get<ArchiveHealthResponse>("/api/archive
 
 export const getArchiveStats = () => get<ArchiveStats>("/api/archive/stats");
 
+export interface TokenRefreshResult {
+  status: "ok" | "error";
+  detail: string;
+}
+
+export async function refreshArchiveToken(): Promise<TokenRefreshResult> {
+  const resp = await fetch(`${BASE}/api/archive/refresh-token`, { method: "POST" });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return resp.json();
+}
+
 // ── Documents ────────────────────────────────────────────────────────────────
 
 export const getDocuments = () => get<ArchiveDocument[]>("/api/archive/documents");

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { getAiSettings, updateAiSettings, checkAiHealth } from "../api/aiApi";
+import { getAiSettings, updateAiSettings, checkAiHealth, refreshAiToken } from "../api/aiApi";
 import type { AISettingsUpdate } from "../api/aiApi";
 import PageHeader from "../components/common/PageHeader";
 
@@ -11,6 +11,7 @@ export default function AISettingsPage() {
 
   const [form, setForm] = useState<AISettingsUpdate>({});
   const [checking, setChecking] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (data) {
@@ -43,6 +44,22 @@ export default function AISettingsPage() {
       toast.error("AI-сервис недоступен");
     } finally {
       setChecking(false);
+    }
+  };
+
+  const handleRefreshToken = async () => {
+    setRefreshing(true);
+    try {
+      const res = await refreshAiToken();
+      if (res.status === "ok") {
+        toast.success("Токен обновлён");
+      } else {
+        toast.error(`Ошибка: ${res.detail}`);
+      }
+    } catch {
+      toast.error("AI-сервис недоступен");
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -128,11 +145,11 @@ export default function AISettingsPage() {
           {checking ? "Проверка…" : "Проверить соединение"}
         </button>
         <button
-          className="btn btn-outline btn-disabled font-display tracking-wider text-xs"
-          disabled
-          title="В разработке"
+          className="btn btn-outline font-display tracking-wider text-xs"
+          onClick={handleRefreshToken}
+          disabled={refreshing}
         >
-          Обновить токен
+          {refreshing ? "Обновление…" : "Обновить токен"}
         </button>
       </div>
     </div>

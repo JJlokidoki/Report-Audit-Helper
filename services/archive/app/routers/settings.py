@@ -1,6 +1,8 @@
 import logging
+import uuid
 
-from fastapi import APIRouter, HTTPException
+import httpx
+from fastapi import APIRouter
 
 from app.config import settings
 from app.providers import get_embedding_provider, reset_provider
@@ -39,21 +41,59 @@ async def update_settings(update: SettingsUpdate) -> SettingsResponse:
 
 @router.get("/health")
 async def health_check() -> dict:
+    reset_provider()
     try:
         provider = get_embedding_provider()
-        provider.embed_query("test")
+        vector = provider.embed_query("ping")
         return {
             "status": "ok",
             "provider": settings.embedding_provider,
             "model": settings.embedding_model,
+            "dimensions": len(vector),
         }
     except Exception as e:
-        raise HTTPException(503, detail={
+        logger.warning("Health check failed: %s", e)
+        return {
             "status": "error",
             "provider": settings.embedding_provider,
             "model": settings.embedding_model,
             "detail": str(e),
-        })
+        }
+
+
+GIGACHAT_AUTH_URL = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
+
+
+@router.post("/refresh-token")
+async def refresh_token():
+    """Refresh GigaChat bearer token using EMBEDDING_AUTH_KEY."""
+    auth_key = settings.embedding_auth_key
+    if not auth_key:
+        return {"status": "error", "detail": "EMBEDDING_AUTH_KEY не задан"}
+
+    try:
+        async with httpx.AsyncClient(verify=False, timeout=30) as client:
+            resp = await client.post(
+                GIGACHAT_AUTH_URL,
+                headers={
+                    "Authorization": f"Basic {auth_key}",
+                    "RqUID": str(uuid.uuid4()),
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Accept": "application/json",
+                },
+                data={"scope": "GIGACHAT_API_PERS"},
+            )
+            resp.raise_for_status()
+            token = resp.json()["access_token"]
+
+        settings.embedding_api_key = token
+        reset_provider()
+
+        logger.info("GigaChat embedding token refreshed successfully")
+        return {"status": "ok", "detail": "Токен обновлён"}
+    except Exception as e:
+        logger.warning("Token refresh failed: %s", e)
+        return {"status": "error", "detail": str(e)}
 
 
 @router.get("/stats", response_model=IndexStats)

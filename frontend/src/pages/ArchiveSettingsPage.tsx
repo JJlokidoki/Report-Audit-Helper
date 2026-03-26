@@ -6,6 +6,7 @@ import {
   updateArchiveSettings,
   checkArchiveHealth,
   getArchiveStats,
+  refreshArchiveToken,
 } from "../api/archiveApi";
 import type { ArchiveSettingsUpdate } from "../api/archiveApi";
 import PageHeader from "../components/common/PageHeader";
@@ -21,6 +22,7 @@ export default function ArchiveSettingsPage() {
 
   const [form, setForm] = useState<ArchiveSettingsUpdate>({});
   const [checking, setChecking] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (data) {
@@ -62,6 +64,22 @@ export default function ArchiveSettingsPage() {
       toast.error("Сервис архивов недоступен");
     } finally {
       setChecking(false);
+    }
+  };
+
+  const handleRefreshToken = async () => {
+    setRefreshing(true);
+    try {
+      const res = await refreshArchiveToken();
+      if (res.status === "ok") {
+        toast.success("Токен обновлён");
+      } else {
+        toast.error(`Ошибка: ${res.detail}`);
+      }
+    } catch {
+      toast.error("Сервис архивов недоступен");
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -192,6 +210,13 @@ export default function ArchiveSettingsPage() {
           disabled={checking}
         >
           {checking ? "Проверка…" : "Проверить соединение"}
+        </button>
+        <button
+          className="btn btn-outline font-display tracking-wider text-xs"
+          onClick={handleRefreshToken}
+          disabled={refreshing}
+        >
+          {refreshing ? "Обновление…" : "Обновить токен"}
         </button>
       </div>
     </div>

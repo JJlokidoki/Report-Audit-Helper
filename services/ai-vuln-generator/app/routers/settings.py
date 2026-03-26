@@ -1,5 +1,7 @@
 import logging
+import uuid
 
+import httpx
 from pydantic import BaseModel
 from fastapi import APIRouter
 
@@ -78,3 +80,40 @@ async def health_check():
             "model": settings.llm_model,
             "detail": str(e),
         }
+
+
+GIGACHAT_AUTH_URL = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
+
+
+@router.post("/refresh-token")
+async def refresh_token():
+    """Refresh GigaChat bearer token using LLM_AUTH_KEY."""
+    auth_key = settings.llm_auth_key
+    if not auth_key:
+        return {"status": "error", "detail": "LLM_AUTH_KEY не задан"}
+
+    try:
+        async with httpx.AsyncClient(verify=False, timeout=30) as client:
+            resp = await client.post(
+                GIGACHAT_AUTH_URL,
+                headers={
+                    "Authorization": f"Basic {auth_key}",
+                    "RqUID": str(uuid.uuid4()),
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Accept": "application/json",
+                },
+                data={"scope": "GIGACHAT_API_PERS"},
+            )
+            resp.raise_for_status()
+            token = resp.json()["access_token"]
+
+        settings.llm_api_key = token
+        # force re-create provider with new token
+        import app.providers as prov
+        prov._current = None
+
+        logger.info("GigaChat token refreshed successfully")
+        return {"status": "ok", "detail": "Токен обновлён"}
+    except Exception as e:
+        logger.warning("Token refresh failed: %s", e)
+        return {"status": "error", "detail": str(e)}

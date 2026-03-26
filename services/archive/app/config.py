@@ -2,13 +2,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    # model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
     log_level: str = "INFO"
 
     embedding_provider: str = "gigachat"
     embedding_model: str = "Embeddings"
     embedding_base_url: str = "https://gigachat.devices.sberbank.ru/api/v1"
     embedding_api_key: str = ""
+    embedding_auth_key: str = ""
     embedding_dimensions: int = 1024
 
     vector_store_path: str = "data/vectorstore"

@@ -126,6 +126,17 @@ export async function checkAiHealth(): Promise<AIHealthResult> {
   return resp.json();
 }
 
+export interface TokenRefreshResult {
+  status: "ok" | "error";
+  detail: string;
+}
+
+export async function refreshAiToken(): Promise<TokenRefreshResult> {
+  const resp = await fetch(`${AI_BASE_URL}/api/ai/refresh-token`, { method: "POST" });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return resp.json();
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export function toBase64(file: File): Promise<string> {

@@ -11,6 +11,8 @@ import ChecklistPage from "./pages/ChecklistPage";
 import AISettingsPage from "./pages/AISettingsPage";
 import DirectoriesPage from "./pages/DirectoriesPage";
 import TemplatesPage from "./pages/TemplatesPage";
+import ArchiveSettingsPage from "./pages/ArchiveSettingsPage";
+import ArchivePage from "./pages/ArchivePage";
 import PlaceholderPage from "./components/common/PlaceholderPage";
 
 const queryClient = new QueryClient({
@@ -29,7 +31,9 @@ export default function App() {
               <Route path="ai" element={<AISettingsPage />} />
               <Route path="directories" element={<DirectoriesPage />} />
               <Route path="templates" element={<TemplatesPage />} />
+              <Route path="archive" element={<ArchiveSettingsPage />} />
             </Route>
+            <Route path="archive" element={<ArchivePage />} />
             <Route path="reports/:id">
               <Route index element={<Navigate to="system-info" replace />} />
               <Route path="system-info" element={<SystemInfoPage />} />

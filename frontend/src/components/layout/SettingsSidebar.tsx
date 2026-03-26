@@ -4,6 +4,7 @@ const settingsLinks = [
   { to: "/settings/ai", label: "Настройки AI" },
   { to: "/settings/directories", label: "Справочники" },
   { to: "/settings/templates", label: "Шаблоны" },
+  { to: "/settings/archive", label: "Архив" },
 ];
 
 export default function SettingsSidebar() {

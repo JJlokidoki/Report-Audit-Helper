@@ -18,6 +18,7 @@ Thumbs.db
 
 reports.json
 logs/
+services/archive/data/
 
 out/
 backups/

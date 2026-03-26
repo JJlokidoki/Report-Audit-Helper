@@ -5,7 +5,7 @@ import {
   getExecutors, createExecutor, updateExecutor, deleteExecutor,
   getSoftwareList, createSoftware, updateSoftware, deleteSoftware,
 } from "../api/reportApi";
-import type { Executor, Software } from "../types";
+import type { Executor, Software, SoftwareLabel } from "../types";
 
 function useConfirm() {
   const [pending, setPending] = useState<(() => void) | null>(null);
@@ -132,25 +132,82 @@ function ExecutorsSection() {
 
 // ─── Software ────────────────────────────────────────────────────────────────
 
+const LABEL_OPTIONS: { value: SoftwareLabel; label: string; style: string }[] = [
+  { value: "web", label: "WEB", style: "bg-primary/15 text-primary border-primary/50" },
+  { value: "mobile", label: "Мобильные", style: "bg-accent/15 text-accent border-accent/50" },
+  { value: "network", label: "Сети", style: "bg-info/15 text-info border-info/50" },
+  { value: "ai", label: "AI", style: "bg-secondary/15 text-secondary border-secondary/50" },
+  { value: "iot", label: "IoT", style: "bg-warning/15 text-warning border-warning/50" },
+  { value: "general", label: "Общие", style: "bg-base-content/8 text-base-content/50 border-base-content/20" },
+];
+
+function LabelToggles({ selected, onChange }: { selected: SoftwareLabel[]; onChange: (labels: SoftwareLabel[]) => void }) {
+  const toggle = (val: SoftwareLabel) => {
+    onChange(selected.includes(val) ? selected.filter((l) => l !== val) : [...selected, val]);
+  };
+  return (
+    <div className="flex flex-wrap gap-1">
+      {LABEL_OPTIONS.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          className={`font-mono text-[10px] tracking-widest px-1.5 py-0.5 border cursor-pointer transition-opacity ${
+            selected.includes(opt.value) ? opt.style : "bg-base-content/5 text-base-content/30 border-base-content/15 opacity-50"
+          }`}
+          onClick={() => toggle(opt.value)}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function SoftwareLabels({ labels }: { labels: SoftwareLabel[] }) {
+  if (!labels.length) return null;
+  return (
+    <>
+      {labels.map((l) => {
+        const opt = LABEL_OPTIONS.find((o) => o.value === l);
+        if (!opt) return null;
+        return (
+          <span key={l} className={`font-mono text-[9px] tracking-widest px-1 py-0.5 border ${opt.style}`}>
+            {opt.label}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
 function SoftwareRow({ sw, onSaved, onDelete }: { sw: Software; onSaved: () => void; onDelete: () => void }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: sw.name, description: sw.description ?? "" });
+  const [editLabels, setEditLabels] = useState<SoftwareLabel[]>(sw.labels ?? []);
   const qc = useQueryClient();
 
   const upd = useMutation({
     mutationFn: () => updateSoftware(sw.id, {
       name: form.name,
       description: form.description || undefined,
+      labels: editLabels,
     }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["software"] }); setEditing(false); onSaved(); },
     onError: () => toast.error("Ошибка сохранения"),
   });
+
+  const startEdit = () => {
+    setForm({ name: sw.name, description: sw.description ?? "" });
+    setEditLabels(sw.labels ?? []);
+    setEditing(true);
+  };
 
   if (editing) {
     return (
       <tr>
         <td><input className="input input-bordered input-sm w-full" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} autoFocus /></td>
         <td><input className="input input-bordered input-sm w-full" value={form.description} placeholder="—" onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} /></td>
+        <td><LabelToggles selected={editLabels} onChange={setEditLabels} /></td>
         <td className="text-right whitespace-nowrap">
           <button className="btn btn-xs btn-primary mr-1" onClick={() => upd.mutate()} disabled={upd.isPending}>Сохранить</button>
           <button className="btn btn-xs btn-ghost" onClick={() => setEditing(false)}>Отмена</button>
@@ -162,12 +219,16 @@ function SoftwareRow({ sw, onSaved, onDelete }: { sw: Software; onSaved: () => v
   return (
     <tr>
       <td>
-        {sw.name}
-        {sw.is_preset && <span className="ml-2 badge badge-xs badge-ghost font-mono">preset</span>}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {sw.name}
+          {sw.is_preset && <span className="font-mono text-[9px] tracking-widest px-1 py-0.5 border bg-base-content/8 text-base-content/50 border-base-content/20">preset</span>}
+          <SoftwareLabels labels={sw.labels ?? []} />
+        </div>
       </td>
       <td className="text-base-content/60 text-sm">{sw.description ?? "—"}</td>
+      <td />
       <td className="text-right whitespace-nowrap">
-        <button className="btn btn-xs btn-ghost mr-1" onClick={() => setEditing(true)}>Изменить</button>
+        <button className="btn btn-xs btn-ghost mr-1" onClick={startEdit}>Изменить</button>
         <button className="btn btn-xs btn-ghost text-error/70 hover:text-error" onClick={onDelete}>Удалить</button>
       </td>
     </tr>
@@ -178,12 +239,20 @@ function SoftwareSection() {
   const qc = useQueryClient();
   const confirm = useConfirm();
   const [form, setForm] = useState({ name: "", description: "" });
+  const [newLabels, setNewLabels] = useState<SoftwareLabel[]>([]);
+  const [filterLabel, setFilterLabel] = useState<SoftwareLabel | null>(null);
 
   const { data: swList = [] } = useQuery({ queryKey: ["software"], queryFn: getSoftwareList });
 
+  const filtered = filterLabel ? swList.filter((sw) => (sw.labels ?? []).includes(filterLabel)) : swList;
+
   const addMut = useMutation({
-    mutationFn: () => createSoftware({ name: form.name.trim(), description: form.description || undefined }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["software"] }); setForm({ name: "", description: "" }); },
+    mutationFn: () => createSoftware({
+      name: form.name.trim(),
+      description: form.description || undefined,
+      labels: newLabels.length ? newLabels : undefined,
+    }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["software"] }); setForm({ name: "", description: "" }); setNewLabels([]); },
     onError: () => toast.error("Ошибка"),
   });
   const delMut = useMutation({
@@ -200,11 +269,36 @@ function SoftwareSection() {
   return (
     <div>
       <h2 className="font-semibold text-base mb-3">Используемое ПО</h2>
+
+      {/* Filter row */}
+      <div className="flex items-center gap-1.5 mb-3">
+        <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-base-content/35 mr-1">Фильтр</span>
+        <button
+          className={`font-mono text-[10px] tracking-widest px-1.5 py-0.5 border cursor-pointer transition-opacity ${
+            filterLabel === null ? "bg-primary/15 text-primary border-primary/50" : "bg-base-content/5 text-base-content/30 border-base-content/15 opacity-50"
+          }`}
+          onClick={() => setFilterLabel(null)}
+        >
+          Все
+        </button>
+        {LABEL_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            className={`font-mono text-[10px] tracking-widest px-1.5 py-0.5 border cursor-pointer transition-opacity ${
+              filterLabel === opt.value ? opt.style : "bg-base-content/5 text-base-content/30 border-base-content/15 opacity-50"
+            }`}
+            onClick={() => setFilterLabel(filterLabel === opt.value ? null : opt.value)}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
       <div className="overflow-x-auto">
         <table className="table table-sm w-full mb-3">
-          <thead><tr><th>Название</th><th>Описание</th><th /></tr></thead>
+          <thead><tr><th>Название</th><th>Описание</th><th>Метки</th><th /></tr></thead>
           <tbody>
-            {swList.map((sw) => (
+            {filtered.map((sw) => (
               <SoftwareRow
                 key={sw.id}
                 sw={sw}
@@ -212,15 +306,20 @@ function SoftwareSection() {
                 onDelete={() => confirm.ask(() => delMut.mutate(sw.id))}
               />
             ))}
-            {swList.length === 0 && (
-              <tr><td colSpan={4} className="text-center text-base-content/40 text-sm">Нет записей</td></tr>
+            {filtered.length === 0 && (
+              <tr><td colSpan={4} className="text-center text-base-content/40 text-sm">
+                {filterLabel ? "// нет ПО с такой меткой" : "// нет записей"}
+              </td></tr>
             )}
           </tbody>
         </table>
       </div>
-      <div className="flex gap-2 flex-wrap">
+
+      {/* Add form */}
+      <div className="flex gap-2 flex-wrap items-end">
         <input className="input input-bordered input-sm w-48" placeholder="Название" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleAdd()} />
         <input className="input input-bordered input-sm w-64" placeholder="Описание" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && handleAdd()} />
+        <LabelToggles selected={newLabels} onChange={setNewLabels} />
         <button className="btn btn-sm btn-primary" onClick={handleAdd} disabled={addMut.isPending}>Добавить</button>
       </div>
 

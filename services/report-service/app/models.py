@@ -8,6 +8,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    JSON,
     String,
     Table,
     Text,
@@ -101,6 +102,7 @@ class Software(Base):
     name: Mapped[str] = mapped_column(String(255))
     description: Mapped[str | None] = mapped_column(String(500), nullable=True)
     is_preset: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    labels: Mapped[list[str]] = mapped_column(JSON, default=list, server_default="[]")
 
     system_infos: Mapped[list["SystemInfo"]] = relationship(
         "SystemInfo", secondary=system_info_software, back_populates="software"

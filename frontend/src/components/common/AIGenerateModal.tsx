@@ -165,9 +165,9 @@ export default function AIGenerateModal({ open, onClose, onApply }: Props) {
         {images.length > 0 && (
           <div className="flex gap-2 flex-wrap">
             {images.map((f, i) => (
-              <span key={i} className="badge badge-ghost gap-1 text-xs">
+              <span key={i} className="inline-flex items-center gap-1 font-mono text-[10px] tracking-widest px-1.5 py-0.5 border bg-base-content/8 text-base-content/50 border-base-content/20">
                 {f.name}
-                <button type="button" className="text-error/60" onClick={() => setImages((p) => p.filter((_, j) => j !== i))}>×</button>
+                <button type="button" className="text-error/60 hover:text-error" onClick={() => setImages((p) => p.filter((_, j) => j !== i))}>×</button>
               </span>
             ))}
           </div>

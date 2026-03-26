@@ -86,10 +86,10 @@ export const deleteExecutor = (id: number) =>
 export const getSoftwareList = () =>
   client.get<Software[]>("/software").then((r) => r.data);
 
-export const createSoftware = (data: { name: string; description?: string; is_preset?: boolean }) =>
+export const createSoftware = (data: { name: string; description?: string; is_preset?: boolean; labels?: string[] }) =>
   client.post<Software>("/software", data).then((r) => r.data);
 
-export const updateSoftware = (id: number, data: { name?: string; description?: string }) =>
+export const updateSoftware = (id: number, data: { name?: string; description?: string; labels?: string[] }) =>
   client.put<Software>(`/software/${id}`, data).then((r) => r.data);
 
 export const deleteSoftware = (id: number) =>

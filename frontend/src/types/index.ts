@@ -42,11 +42,14 @@ export interface Executor {
   name: string;
 }
 
+export type SoftwareLabel = "web" | "mobile" | "network" | "ai" | "iot" | "general";
+
 export interface Software {
   id: number;
   name: string;
   description: string | null;
   is_preset: boolean;
+  labels: SoftwareLabel[];
 }
 
 export interface Vulnerability {

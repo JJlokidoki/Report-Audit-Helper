@@ -20,6 +20,7 @@ async def _migrate(conn) -> None:
     for stmt in [
         "ALTER TABLE software ADD COLUMN description VARCHAR(500)",
         "ALTER TABLE software ADD COLUMN is_preset BOOLEAN NOT NULL DEFAULT 0",
+        "ALTER TABLE software ADD COLUMN labels TEXT NOT NULL DEFAULT '[]'",
     ]:
         try:
             await conn.execute(text(stmt))

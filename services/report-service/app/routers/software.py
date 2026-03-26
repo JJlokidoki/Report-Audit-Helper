@@ -10,9 +10,13 @@ router = APIRouter(prefix="/api/software", tags=["software"])
 
 
 @router.get("", response_model=list[SoftwareResponse])
-async def list_software(db: AsyncSession = Depends(get_db)):
+async def list_software(labels: str | None = None, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Software).order_by(Software.name))
-    return result.scalars().all()
+    items = list(result.scalars().all())
+    if labels:
+        label_set = set(labels.split(","))
+        items = [s for s in items if set(s.labels or []) & label_set]
+    return items
 
 
 @router.post("", response_model=SoftwareResponse, status_code=201)

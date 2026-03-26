@@ -45,11 +45,13 @@ class SoftwareCreate(BaseModel):
     name: str
     description: str | None = None
     is_preset: bool = False
+    labels: list[str] = []
 
 
 class SoftwareUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
+    labels: list[str] | None = None
 
 
 class SoftwareResponse(BaseModel):
@@ -59,6 +61,7 @@ class SoftwareResponse(BaseModel):
     name: str
     description: str | None
     is_preset: bool
+    labels: list[str]
 
 
 class SystemInfoUpdate(BaseModel):

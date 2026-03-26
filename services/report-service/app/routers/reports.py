@@ -4,9 +4,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.models import Report, Vulnerability, SecurityCheck
+from app.models import Report, Vulnerability, SecurityCheck, SystemInfo, Software
 from app.schemas import ReportCreate, ReportUpdate, ReportResponse, ReportListResponse
 from app.checklist_data import get_checklist_items
+
+REPORT_TYPE_LABELS: dict[str, list[str]] = {
+    "web": ["web", "network", "general"],
+    "ios": ["mobile", "general"],
+    "android": ["mobile", "general"],
+    "ai": ["ai", "general"],
+    "iot": ["iot", "network", "general"],
+}
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
 
@@ -48,6 +56,17 @@ async def create_report(data: ReportCreate, db: AsyncSession = Depends(get_db)):
             goal=item.get("goal"),
         )
         db.add(check)
+
+    # Auto-assign software by labels
+    target_labels = set(REPORT_TYPE_LABELS.get(data.report_type, []))
+    if target_labels:
+        sw_result = await db.execute(select(Software))
+        all_sw = sw_result.scalars().all()
+        matching = [s for s in all_sw if set(s.labels or []) & target_labels]
+        if matching:
+            info = SystemInfo(report_id=report.id)
+            info.software = matching
+            db.add(info)
 
     await db.commit()
     await db.refresh(report)

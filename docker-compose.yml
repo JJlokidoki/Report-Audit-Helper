@@ -29,6 +29,24 @@ services:
       - LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.1}
       - LLM_MAX_TOKENS=${LLM_MAX_TOKENS:-2048}
 
+  bzone-service:
+    build: services/bzone-service
+    volumes:
+      - bzone-data:/app/data
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./data/bzone.db
+      - BZ_TOKEN=${BZ_TOKEN:-}
+      - BZ_BASE_URL=${BZ_BASE_URL:-https://bugbounty.bi.zone}
+      - BZ_COMPANIES=${BZ_COMPANIES:-["sber-bugs-zone-vi","sberbank-online","sberbank-site","sberbank-invest","sberbankaktivno","shareholder-sberbank","sber-business","sber-anti-fraud","sberuniversity","sber-iot"]}
+      - BZ_TARGET_STAGES=${BZ_TARGET_STAGES:-[]}
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - LLM_MODEL=${LLM_MODEL:-openai/gpt-oss-20b}
+      - LLM_BASE_URL=${LLM_BASE_URL:-http://host.docker.internal:1234/v1}
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - LLM_AUTH_KEY=${LLM_AUTH_KEY:-}
+      - LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.1}
+      - LLM_MAX_TOKENS=${LLM_MAX_TOKENS:-2048}
+
   archive:
     build: services/archive
     volumes:
@@ -69,8 +87,11 @@ services:
         condition: service_started
       archive:
         condition: service_started
+      bzone-service:
+        condition: service_started
 
 volumes:
   report-db:
   frontend-dist:
   archive-data:
+  bzone-data:

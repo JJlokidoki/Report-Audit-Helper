@@ -144,12 +144,13 @@ export default function ReportListPage() {
           <div className="font-display text-lg font-semibold tracking-wide text-base-content group-hover:text-primary transition-colors">Архив</div>
           <div className="text-sm text-base-content/40 font-mono mt-1">// семантический поиск по документам</div>
         </Link>
-        <div
-          className="flex-1 border border-base-300/50 bg-base-200/20 px-5 py-4 opacity-40 cursor-not-allowed"
+        <Link
+          to="/bzone"
+          className="group flex-1 border border-base-300 bg-base-200/30 px-5 py-4 transition-colors hover:border-primary/30 hover:bg-primary/3"
         >
-          <div className="font-display text-lg font-semibold tracking-wide text-base-content">BiZone</div>
-          <div className="text-sm text-base-content/40 font-mono mt-1">// coming soon</div>
-        </div>
+          <div className="font-display text-lg font-semibold tracking-wide text-base-content group-hover:text-primary transition-colors">BZone</div>
+          <div className="text-sm text-base-content/40 font-mono mt-1">// синхронизация и анализ репортов BI.ZONE Bug Bounty</div>
+        </Link>
       </div>
 
       <div className="flex flex-wrap gap-3 items-center mb-5">

@@ -2,6 +2,7 @@ import { Outlet, useParams, useLocation } from "react-router-dom";
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
 import SettingsSidebar from "./SettingsSidebar";
+import BZoneSidebar from "./BZoneSidebar";
 import { useTheme } from "../../hooks/useTheme";
 
 export default function Layout() {
@@ -9,6 +10,7 @@ export default function Layout() {
   const location = useLocation();
   const hasReport = !!id;
   const isSettings = location.pathname.startsWith("/settings");
+  const isBZone = location.pathname.startsWith("/bzone");
   const { theme, toggle } = useTheme();
 
   return (
@@ -16,6 +18,7 @@ export default function Layout() {
       <Navbar theme={theme} onThemeToggle={toggle} />
       <div className="flex flex-1 overflow-hidden">
         {isSettings && <SettingsSidebar />}
+        {isBZone && <BZoneSidebar />}
         {hasReport && <Sidebar />}
         <main key={location.pathname} className="animate-page flex-1 overflow-y-auto p-6 dot-grid">
           <Outlet />

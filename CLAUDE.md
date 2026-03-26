@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Pentest Audit Helper — a penetration testing report management system. Russian-language UI. Microservices architecture: React SPA frontend + 6 Python FastAPI backend services communicating over HTTP, with SQLite as the sole database (accessed only by Report Service).
+Pentest Audit Helper — a penetration testing report management system. Russian-language UI. Microservices architecture: React SPA frontend + 7 Python FastAPI backend services communicating over HTTP, with SQLite databases (Report Service and BZone Service each have their own).
 
 ## Service Ports
 
@@ -16,6 +16,7 @@ Pentest Audit Helper — a penetration testing report management system. Russian
 | AI Vuln Generator | 8004 | `services/ai-vuln-generator` |
 | TestGen Service | 8005 (stub) | `services/testgen-service` |
 | Archive Service | 8006 | `services/archive` |
+| BZone Service | 8007 | `services/bzone-service` |
 | Frontend (dev) | 5173 | `frontend` |
 
 ## Development Commands
@@ -32,6 +33,7 @@ cd frontend && npm install && npm run dev
 cd services/report-service && .\venv\Scripts\activate && uvicorn app.main:app --port 8001 --reload
 cd services/export-service && .\venv\Scripts\activate && uvicorn app.main:app --port 8002 --reload
 cd services/ai-vuln-generator && .\venv\Scripts\activate && uvicorn app.main:app --port 8004 --reload
+cd services/archive && .\venv\Scripts\activate && uvicorn app.main:app --port 8006 --reload
 ```
 
 Helper script to start/restart all services (kills occupied ports, loads `.env`):
@@ -101,11 +103,11 @@ cd frontend && npm test
 ### AI Vuln Generator (`services/ai-vuln-generator/`)
 - Env config: `LLM_PROVIDER` (ollama/openai/custom), `LLM_MODEL`, `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_TEMPERATURE` (0.1), `LLM_MAX_TOKENS` (2048)
 - Streaming: `POST /api/ai/generate/stream` → `StreamingResponse(media_type="text/plain")`
-- Prompts: `SYSTEM_PROMPT`, `KILLCHAIN_PROMPT`, `WSTG_PROMPT`, `SUMMARY_PROMPT` in `prompts.py`
+- Prompts: `SYSTEM_PROMPT`, `KILLCHAIN_PROMPT`, `SUMMARY_PROMPT` in `prompts.py`
 
 ## Frontend Conventions (`frontend/`)
 
-- **Stack:** React 18, TypeScript strict, Vite, DaisyUI 5 + Tailwind CSS 4, React Router v7, TanStack Query, Axios, TipTap, TanStack Table, dnd-kit, react-hot-toast
+- **Stack:** React 19, TypeScript strict, Vite 7, DaisyUI 5 + Tailwind CSS 4, React Router v7, TanStack Query v5, Axios, TipTap v3, TanStack Table, dnd-kit, react-hot-toast
 - All TypeScript interfaces in `types/index.ts`
 - All API requests through TanStack Query (`useQuery`/`useMutation`)
 - API clients in `api/` — `reportApi.ts`, `exportApi.ts`, `aiApi.ts`

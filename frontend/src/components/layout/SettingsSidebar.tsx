@@ -5,6 +5,7 @@ const settingsLinks = [
   { to: "/settings/directories", label: "Справочники" },
   { to: "/settings/templates", label: "Шаблоны" },
   { to: "/settings/archive", label: "Архив" },
+  { to: "/settings/bzone", label: "BZone" },
 ];
 
 export default function SettingsSidebar() {

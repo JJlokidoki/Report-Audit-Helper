@@ -51,7 +51,7 @@ wait_ready() {
 }
 
 # Parse args
-DO_ALL=false DO_FRONTEND=false DO_REPORT=false DO_EXPORT=false DO_AI=false DO_ARCHIVE=false
+DO_ALL=false DO_FRONTEND=false DO_REPORT=false DO_EXPORT=false DO_AI=false DO_ARCHIVE=false DO_BZONE=false
 if [ $# -eq 0 ]; then DO_ALL=true; fi
 for arg in "$@"; do
   case "$arg" in
@@ -61,6 +61,7 @@ for arg in "$@"; do
     --export)   DO_EXPORT=true ;;
     --ai)       DO_AI=true ;;
     --archive)  DO_ARCHIVE=true ;;
+    --bzone)    DO_BZONE=true ;;
     *) echo "Unknown arg: $arg"; exit 1 ;;
   esac
 done
@@ -82,6 +83,9 @@ fi
 if $DO_ALL || $DO_ARCHIVE; then
   start_backend "archive" 8006 "services/archive"
 fi
+if $DO_ALL || $DO_BZONE; then
+  start_backend "bzone-service" 8007 "services/bzone-service"
+fi
 if $DO_ALL || $DO_FRONTEND; then
   start_frontend
 fi
@@ -93,6 +97,7 @@ if $DO_ALL || $DO_REPORT;   then wait_ready 8001 "report-service"; fi
 if $DO_ALL || $DO_EXPORT;   then wait_ready 8002 "export-service"; fi
 if $DO_ALL || $DO_AI;       then wait_ready 8004 "ai-vuln-generator"; fi
 if $DO_ALL || $DO_ARCHIVE;  then wait_ready 8006 "archive"; fi
+if $DO_ALL || $DO_BZONE;    then wait_ready 8007 "bzone-service"; fi
 if $DO_ALL || $DO_FRONTEND; then wait_ready 5173 "frontend"; fi
 
 echo ""

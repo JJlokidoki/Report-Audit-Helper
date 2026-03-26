@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+aiosqlite
+pydantic-settings
+httpx
+openai>=1.0
+ollama>=0.5
+pytest
+pytest-asyncio

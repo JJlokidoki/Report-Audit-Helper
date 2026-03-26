@@ -13,6 +13,8 @@ import DirectoriesPage from "./pages/DirectoriesPage";
 import TemplatesPage from "./pages/TemplatesPage";
 import ArchiveSettingsPage from "./pages/ArchiveSettingsPage";
 import ArchivePage from "./pages/ArchivePage";
+import BZoneReportsPage from "./pages/bzone/BZoneReportsPage";
+import BZoneSettingsPage from "./pages/BZoneSettingsPage";
 import PlaceholderPage from "./components/common/PlaceholderPage";
 
 const queryClient = new QueryClient({
@@ -32,8 +34,14 @@ export default function App() {
               <Route path="directories" element={<DirectoriesPage />} />
               <Route path="templates" element={<TemplatesPage />} />
               <Route path="archive" element={<ArchiveSettingsPage />} />
+              <Route path="bzone" element={<BZoneSettingsPage />} />
             </Route>
             <Route path="archive" element={<ArchivePage />} />
+            <Route path="bzone">
+              <Route index element={<Navigate to="reports" replace />} />
+              <Route path="reports" element={<BZoneReportsPage />} />
+              <Route path="autotests" element={<PlaceholderPage />} />
+            </Route>
             <Route path="reports/:id">
               <Route index element={<Navigate to="system-info" replace />} />
               <Route path="system-info" element={<SystemInfoPage />} />

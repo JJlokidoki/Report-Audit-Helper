@@ -15,7 +15,6 @@ import type { Report, ReportListItem, ReportType } from "../types";
 import { REPORT_TYPE_STYLES } from "../utils/labelConfig";
 import ConfirmModal from "../components/common/ConfirmModal";
 import ModalShell from "../components/common/ModalShell";
-import PageHeader from "../components/common/PageHeader";
 import EmptyState from "../components/common/EmptyState";
 import Tag from "../components/common/Tag";
 
@@ -130,7 +129,28 @@ export default function ReportListPage() {
 
   return (
     <div className="max-w-5xl">
-      <PageHeader title="Отчёты" subtitle="управление аудитами безопасности" className="mb-5" />
+      <div className="flex gap-3 mb-5">
+        <Link
+          to="/"
+          className="group flex-1 border border-primary/40 bg-primary/5 px-5 py-4 transition-colors"
+        >
+          <div className="font-display text-lg font-semibold tracking-wide text-primary">Отчёты</div>
+          <div className="text-sm text-base-content/40 font-mono mt-1">// управление аудитами безопасности</div>
+        </Link>
+        <Link
+          to="/archive"
+          className="group flex-1 border border-base-300 bg-base-200/30 px-5 py-4 transition-colors hover:border-primary/30 hover:bg-primary/3"
+        >
+          <div className="font-display text-lg font-semibold tracking-wide text-base-content group-hover:text-primary transition-colors">Архив</div>
+          <div className="text-sm text-base-content/40 font-mono mt-1">// семантический поиск по документам</div>
+        </Link>
+        <div
+          className="flex-1 border border-base-300/50 bg-base-200/20 px-5 py-4 opacity-40 cursor-not-allowed"
+        >
+          <div className="font-display text-lg font-semibold tracking-wide text-base-content">BiZone</div>
+          <div className="text-sm text-base-content/40 font-mono mt-1">// coming soon</div>
+        </div>
+      </div>
 
       <div className="flex flex-wrap gap-3 items-center mb-5">
         <select

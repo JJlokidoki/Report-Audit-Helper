@@ -29,6 +29,21 @@ services:
       - LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.1}
       - LLM_MAX_TOKENS=${LLM_MAX_TOKENS:-2048}
 
+  archive:
+    build: services/archive
+    volumes:
+      - archive-data:/app/data
+    environment:
+      - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-openai}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-text-embedding-3-small}
+      - EMBEDDING_BASE_URL=${EMBEDDING_BASE_URL:-http://host.docker.internal:1234/v1}
+      - EMBEDDING_API_KEY=${EMBEDDING_API_KEY:-}
+      - EMBEDDING_DIMENSIONS=${EMBEDDING_DIMENSIONS:-512}
+      - REPORT_SERVICE_URL=http://report-service:8001
+    depends_on:
+      report-service:
+        condition: service_healthy
+
   frontend:
     build: frontend
     volumes:
@@ -52,7 +67,10 @@ services:
         condition: service_started
       ai-vuln-generator:
         condition: service_started
+      archive:
+        condition: service_started
 
 volumes:
   report-db:
   frontend-dist:
+  archive-data:

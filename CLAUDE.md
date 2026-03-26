@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Pentest Audit Helper — a penetration testing report management system. Russian-language UI. Microservices architecture: React SPA frontend + 5 Python FastAPI backend services communicating over HTTP, with SQLite as the sole database (accessed only by Report Service).
+Pentest Audit Helper — a penetration testing report management system. Russian-language UI. Microservices architecture: React SPA frontend + 6 Python FastAPI backend services communicating over HTTP, with SQLite as the sole database (accessed only by Report Service).
 
 ## Service Ports
 
@@ -15,6 +15,7 @@ Pentest Audit Helper — a penetration testing report management system. Russian
 | Retest Service | 8003 (stub) | `services/retest-service` |
 | AI Vuln Generator | 8004 | `services/ai-vuln-generator` |
 | TestGen Service | 8005 (stub) | `services/testgen-service` |
+| Archive Service | 8006 | `services/archive` |
 | Frontend (dev) | 5173 | `frontend` |
 
 ## Development Commands

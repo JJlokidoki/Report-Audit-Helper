@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic-settings
+httpx
+lancedb
+pyarrow
+python-docx
+pymupdf
+openai>=1.0
+ollama>=0.5
+pandas
+pytest
+pytest-asyncio

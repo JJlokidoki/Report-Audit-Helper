@@ -4,6 +4,8 @@ interface ImportMetaEnv {
   readonly VITE_REPORT_API_URL: string;
   readonly VITE_EXPORT_API_URL: string;
   readonly VITE_AI_API_URL: string;
+  readonly VITE_ARCHIVE_API_URL: string;
+  readonly VITE_BZONE_API_URL: string;
 }
 
 interface ImportMeta {

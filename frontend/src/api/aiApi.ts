@@ -1,4 +1,4 @@
-const AI_BASE_URL = import.meta.env.VITE_AI_API_URL ?? "http://127.0.0.1:8004";
+const AI_BASE_URL = import.meta.env.VITE_AI_API_URL || "";
 
 export interface ChatMessage {
   role: "user" | "assistant" | "system";

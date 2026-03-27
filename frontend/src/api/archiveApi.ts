@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_ARCHIVE_API_URL ?? "http://127.0.0.1:8006";
+const BASE = import.meta.env.VITE_ARCHIVE_API_URL || "";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

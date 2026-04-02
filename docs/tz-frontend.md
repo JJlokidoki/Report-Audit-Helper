@@ -86,7 +86,7 @@
 ### 6. ChecklistPage
 - Таблица с группировкой по category (collapsible groups)
 - Колонки: check_id, name, short_description, goal, status (inline select), notes (inline textarea)
-- Цветовая индикация: pass=green, fail=red, not_applicable=gray, not_tested=default
+- Цветовая индикация: pass=green, fail=red, not_tested=default
 - Фильтр по статусу (select)
 - Автосохранение при изменении status/notes → `PUT /api/reports/{id}/checklist/{check_id}`
 

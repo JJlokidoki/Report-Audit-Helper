@@ -16,7 +16,7 @@ export type Severity = "critical" | "high" | "medium" | "low" | "info";
 
 export type AutomationLevel = "fully" | "partially" | "no" | "impossible";
 
-export type CheckStatus = "passed" | "failed" | "not_applicable" | "not_tested";
+export type CheckStatus = "passed" | "failed" | "not_tested";
 
 export interface SystemInfo {
   id: number;

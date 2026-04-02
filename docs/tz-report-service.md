@@ -92,7 +92,7 @@
 | name | string | Название проверки |
 | short_description | text | Краткое описание |
 | goal | text | Цель проверки |
-| status | enum(not_tested/pass/fail/not_applicable), default=not_tested | Статус |
+| status | enum(not_tested/pass/fail), default=not_tested | Статус |
 | notes | text | Заметки |
 
 ### AutoTest

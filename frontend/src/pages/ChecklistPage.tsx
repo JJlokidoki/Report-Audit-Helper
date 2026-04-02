@@ -4,17 +4,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getChecklist, updateCheck } from "../api/reportApi";
 import type { SecurityCheck, CheckStatus } from "../types";
 
-const STATUS_OPTIONS: CheckStatus[] = ["passed", "failed", "not_applicable", "not_tested"];
+const STATUS_OPTIONS: CheckStatus[] = ["passed", "failed", "not_tested"];
 const STATUS_LABEL: Record<CheckStatus, string> = {
   passed: "Выполнено",
   failed: "Сломано",
-  not_applicable: "Не применимо",
   not_tested: "Не выполнено",
 };
 const STATUS_CLASS: Record<CheckStatus, string> = {
   passed: "select-success",
   failed: "select-error",
-  not_applicable: "select-ghost",
   not_tested: "",
 };
 
@@ -54,7 +52,7 @@ function CheckRow({
       <td>
         <span title={check.short_description ?? undefined}>{check.name}</span>
       </td>
-      <td className="max-w-xs">
+      <td>
         {check.goal ? (
           <ul className="list-none space-y-0.5 text-xs text-base-content/70">
             {check.goal.split("\n").map((line, i) => (
@@ -77,9 +75,9 @@ function CheckRow({
       </td>
       <td>
         <textarea
-          className="textarea textarea-bordered textarea-sm w-full min-h-[2rem] resize-none break-words overflow-wrap-anywhere"
+          className="textarea textarea-bordered textarea-sm w-full min-h-[2rem] resize-none overflow-hidden"
           rows={1}
-          style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}
+          style={{ wordBreak: "break-word", overflowWrap: "anywhere", fieldSizing: "content" } as React.CSSProperties}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           onBlur={handleNotesBlur}
@@ -152,8 +150,15 @@ export default function ChecklistPage() {
           <div key={category} className="collapse collapse-arrow bg-base-200">
             <input type="checkbox" defaultChecked />
             <div className="collapse-title font-medium">{category}</div>
-            <div className="collapse-content">
-              <table className="table table-zebra table-sm">
+            <div className="collapse-content overflow-hidden">
+              <table className="table table-zebra table-sm table-fixed w-full">
+                <colgroup>
+                  <col className="w-32" />
+                  <col className="w-48" />
+                  <col />
+                  <col className="w-36" />
+                  <col className="w-1/3" />
+                </colgroup>
                 <thead>
                   <tr>
                     <th>ID</th>

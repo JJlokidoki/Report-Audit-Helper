@@ -4,15 +4,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getChecklist, updateCheck } from "../api/reportApi";
 import type { SecurityCheck, CheckStatus } from "../types";
 
-const STATUS_OPTIONS: CheckStatus[] = ["passed", "failed", "not_tested"];
+const STATUS_OPTIONS: CheckStatus[] = ["passed", "not_applicable", "not_tested"];
 const STATUS_LABEL: Record<CheckStatus, string> = {
   passed: "Выполнено",
-  failed: "Сломано",
+  not_applicable: "Не применимо",
   not_tested: "Не выполнено",
 };
 const STATUS_CLASS: Record<CheckStatus, string> = {
   passed: "select-success",
-  failed: "select-error",
+  not_applicable: "select-ghost",
   not_tested: "",
 };
 

@@ -17,7 +17,7 @@ SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
 
 STATUS_LABEL = {
     "passed": "Выполнено",
-    "failed": "Сломано",
+    "not_applicable": "Не применимо",
     "not_tested": "Не выполнено",
 }
 

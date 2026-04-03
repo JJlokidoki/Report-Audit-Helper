@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import type { Severity } from "../../types";
 import Tag from "./Tag";
 
@@ -64,7 +65,7 @@ export default function CVSSCalculatorModal({ open, onClose, onApply, initialVec
 
   const sev = current?.severity ?? "info";
 
-  return (
+  return createPortal(
     <dialog open className="modal modal-open">
       <div className="modal-box bg-base-200 border border-base-300 rounded-sm p-0 max-w-4xl w-full flex flex-col" style={{ height: "85vh" }}>
         {/* Modal header */}
@@ -108,6 +109,7 @@ export default function CVSSCalculatorModal({ open, onClose, onApply, initialVec
         />
       </div>
       <div className="modal-backdrop" onClick={onClose} />
-    </dialog>
+    </dialog>,
+    document.body,
   );
 }

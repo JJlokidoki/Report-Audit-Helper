@@ -109,6 +109,22 @@ class Software(Base):
     )
 
 
+class VulnerabilityTemplate(Base):
+    __tablename__ = "vulnerability_template"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    bug_name: Mapped[str] = mapped_column(String(255))
+    bug_criticality: Mapped[str] = mapped_column(String(50), default="info")
+    bug_description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cvss_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    cvss_vector: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    reproduction_steps: Mapped[str | None] = mapped_column(Text, nullable=True)
+    remediation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    automation_level: Mapped[str] = mapped_column(String(50), default="no")
+    is_preset: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    labels: Mapped[list[str]] = mapped_column(JSON, default=list, server_default="[]")
+
+
 class Vulnerability(Base):
     __tablename__ = "vulnerability"
 

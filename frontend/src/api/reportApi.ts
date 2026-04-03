@@ -4,6 +4,7 @@ import type {
   ReportListItem,
   SystemInfo,
   Vulnerability,
+  VulnerabilityTemplate,
   TestSummary,
   SecurityCheck,
   Executor,
@@ -94,3 +95,16 @@ export const updateSoftware = (id: number, data: { name?: string; description?: 
 
 export const deleteSoftware = (id: number) =>
   client.delete(`/software/${id}`);
+
+// Vulnerability Templates
+export const getVulnerabilityTemplates = () =>
+  client.get<VulnerabilityTemplate[]>("/vulnerability-templates").then((r) => r.data);
+
+export const createVulnerabilityTemplate = (data: Partial<VulnerabilityTemplate>) =>
+  client.post<VulnerabilityTemplate>("/vulnerability-templates", data).then((r) => r.data);
+
+export const updateVulnerabilityTemplate = (id: number, data: Partial<VulnerabilityTemplate>) =>
+  client.put<VulnerabilityTemplate>(`/vulnerability-templates/${id}`, data).then((r) => r.data);
+
+export const deleteVulnerabilityTemplate = (id: number) =>
+  client.delete(`/vulnerability-templates/${id}`);

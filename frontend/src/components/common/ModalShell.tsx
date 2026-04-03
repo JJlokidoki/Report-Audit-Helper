@@ -1,3 +1,5 @@
+import { createPortal } from "react-dom";
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -32,7 +34,7 @@ export default function ModalShell({
     ? { width: "95vw", maxWidth: "95vw", height: "90vh" }
     : undefined;
 
-  return (
+  return createPortal(
     <dialog open className="modal modal-open">
       <div className={boxClasses} style={boxStyle}>
         <div className={`flex items-center gap-2 ${fullHeight ? "px-4 py-3 border-b border-base-300 shrink-0" : "mb-4"}`}>
@@ -53,6 +55,7 @@ export default function ModalShell({
         {actions && <div className="modal-action gap-2">{actions}</div>}
       </div>
       <div className="modal-backdrop" onClick={onClose} />
-    </dialog>
+    </dialog>,
+    document.body,
   );
 }

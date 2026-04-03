@@ -100,6 +100,47 @@ class SystemInfoResponse(BaseModel):
     software: list["SoftwareResponse"] = []
 
 
+class VulnerabilityTemplateCreate(BaseModel):
+    bug_name: str
+    bug_criticality: str = "info"
+    bug_description: str | None = None
+    cvss_score: float | None = None
+    cvss_vector: str | None = None
+    reproduction_steps: str | None = None
+    remediation: str | None = None
+    automation_level: str = "no"
+    is_preset: bool = False
+    labels: list[str] = []
+
+
+class VulnerabilityTemplateUpdate(BaseModel):
+    bug_name: str | None = None
+    bug_criticality: str | None = None
+    bug_description: str | None = None
+    cvss_score: float | None = None
+    cvss_vector: str | None = None
+    reproduction_steps: str | None = None
+    remediation: str | None = None
+    automation_level: str | None = None
+    labels: list[str] | None = None
+
+
+class VulnerabilityTemplateResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    bug_name: str
+    bug_criticality: str
+    bug_description: str | None
+    cvss_score: float | None
+    cvss_vector: str | None
+    reproduction_steps: str | None
+    remediation: str | None
+    automation_level: str
+    is_preset: bool
+    labels: list[str]
+
+
 class VulnerabilityCreate(BaseModel):
     bug_name: str
     bug_criticality: str = "info"

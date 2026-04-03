@@ -52,6 +52,22 @@ export interface Software {
   labels: SoftwareLabel[];
 }
 
+export type VulnTemplateLabel = "web" | "mobile" | "network" | "api" | "auth" | "crypto" | "config" | "general";
+
+export interface VulnerabilityTemplate {
+  id: number;
+  bug_name: string;
+  bug_criticality: Severity;
+  bug_description: string | null;
+  cvss_score: number | null;
+  cvss_vector: string | null;
+  reproduction_steps: string | null;
+  remediation: string | null;
+  automation_level: AutomationLevel;
+  is_preset: boolean;
+  labels: VulnTemplateLabel[];
+}
+
 export interface Vulnerability {
   id: number;
   report_id: number;

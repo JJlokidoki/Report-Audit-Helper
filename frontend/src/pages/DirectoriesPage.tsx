@@ -13,6 +13,7 @@ import PageHeader from "../components/common/PageHeader";
 import EmptyState from "../components/common/EmptyState";
 import Tag from "../components/common/Tag";
 import ModalShell from "../components/common/ModalShell";
+import RichEditor from "../components/common/RichEditor";
 import CVSSCalculatorModal from "../components/common/CVSSCalculatorModal";
 import { useTheme } from "../hooks/useTheme";
 
@@ -407,47 +408,7 @@ function VulnTemplateLabels({ labels }: { labels: VulnTemplateLabel[] }) {
   );
 }
 
-function VulnTemplateRow({ tpl, onSaved, onDelete }: { tpl: VulnerabilityTemplate; onSaved: () => void; onDelete: () => void }) {
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: tpl.bug_name, criticality: tpl.bug_criticality as Severity });
-  const [editLabels, setEditLabels] = useState<VulnTemplateLabel[]>(tpl.labels ?? []);
-  const qc = useQueryClient();
-
-  const upd = useMutation({
-    mutationFn: () => updateVulnerabilityTemplate(tpl.id, {
-      bug_name: form.name,
-      bug_criticality: form.criticality,
-      labels: editLabels,
-    }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["vulnerability-templates"] }); setEditing(false); onSaved(); },
-    onError: () => toast.error("Ошибка сохранения"),
-  });
-
-  const startEdit = () => {
-    setForm({ name: tpl.bug_name, criticality: tpl.bug_criticality });
-    setEditLabels(tpl.labels ?? []);
-    setEditing(true);
-  };
-
-  if (editing) {
-    return (
-      <tr>
-        <td><input className="input input-bordered input-sm w-full" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} autoFocus /></td>
-        <td>
-          <select className="select select-bordered select-sm w-full" value={form.criticality} onChange={(e) => setForm((p) => ({ ...p, criticality: e.target.value as Severity }))}>
-            {SEVERITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-        </td>
-        <td className="font-mono text-sm text-base-content/50">{tpl.cvss_score ?? "—"}</td>
-        <td><VulnTemplateLabelToggles selected={editLabels} onChange={setEditLabels} /></td>
-        <td className="text-right whitespace-nowrap">
-          <button className="btn btn-xs btn-primary mr-1" onClick={() => upd.mutate()} disabled={upd.isPending}>Сохранить</button>
-          <button className="btn btn-xs btn-ghost" onClick={() => setEditing(false)}>Отмена</button>
-        </td>
-      </tr>
-    );
-  }
-
+function VulnTemplateRow({ tpl, onEdit, onDelete }: { tpl: VulnerabilityTemplate; onEdit: () => void; onDelete: () => void }) {
   return (
     <tr>
       <td>
@@ -464,7 +425,7 @@ function VulnTemplateRow({ tpl, onSaved, onDelete }: { tpl: VulnerabilityTemplat
         </div>
       </td>
       <td className="text-right whitespace-nowrap">
-        <button className="btn btn-xs btn-ghost mr-1" onClick={startEdit}>Изменить</button>
+        <button className="btn btn-xs btn-ghost mr-1" onClick={onEdit}>Изменить</button>
         <button className="btn btn-xs btn-ghost text-error/70 hover:text-error" onClick={onDelete}>Удалить</button>
       </td>
     </tr>
@@ -486,9 +447,10 @@ const CREATE_FORM_INITIAL = {
 function VulnerabilityTemplatesSection() {
   const qc = useQueryClient();
   const confirm = useConfirm();
-  const [createOpen, setCreateOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [cvssOpen, setCvssOpen] = useState(false);
-  const [createForm, setCreateForm] = useState(CREATE_FORM_INITIAL);
+  const [form, setForm] = useState(CREATE_FORM_INITIAL);
   const { theme } = useTheme();
   const [filterLabel, setFilterLabel] = useState<VulnTemplateLabel | null>(null);
 
@@ -496,25 +458,54 @@ function VulnerabilityTemplatesSection() {
 
   const filtered = filterLabel ? templates.filter((t) => (t.labels ?? []).includes(filterLabel)) : templates;
 
-  const updateCreate = <K extends keyof typeof createForm>(k: K, v: typeof createForm[K]) =>
-    setCreateForm((prev) => ({ ...prev, [k]: v }));
+  const updateField = <K extends keyof typeof form>(k: K, v: typeof form[K]) =>
+    setForm((prev) => ({ ...prev, [k]: v }));
 
-  const addMut = useMutation({
-    mutationFn: () => createVulnerabilityTemplate({
-      bug_name: createForm.bug_name.trim(),
-      bug_criticality: createForm.bug_criticality,
-      cvss_score: createForm.cvss_score,
-      cvss_vector: createForm.cvss_vector,
-      automation_level: createForm.automation_level,
-      bug_description: createForm.bug_description,
-      reproduction_steps: createForm.reproduction_steps,
-      remediation: createForm.remediation,
-      labels: createForm.labels.length ? createForm.labels : undefined,
-    }),
+  const openCreate = () => {
+    setEditingId(null);
+    setForm(CREATE_FORM_INITIAL);
+    setModalOpen(true);
+  };
+
+  const openEdit = (tpl: VulnerabilityTemplate) => {
+    setEditingId(tpl.id);
+    setForm({
+      bug_name: tpl.bug_name,
+      bug_criticality: tpl.bug_criticality,
+      cvss_score: tpl.cvss_score,
+      cvss_vector: tpl.cvss_vector,
+      automation_level: tpl.automation_level,
+      bug_description: tpl.bug_description,
+      reproduction_steps: tpl.reproduction_steps,
+      remediation: tpl.remediation,
+      labels: tpl.labels ?? [],
+    });
+    setModalOpen(true);
+  };
+
+  const closeModal = () => { setModalOpen(false); setEditingId(null); };
+
+  const saveMut = useMutation({
+    mutationFn: () => {
+      const data = {
+        bug_name: form.bug_name.trim(),
+        bug_criticality: form.bug_criticality,
+        cvss_score: form.cvss_score,
+        cvss_vector: form.cvss_vector,
+        automation_level: form.automation_level,
+        bug_description: form.bug_description,
+        reproduction_steps: form.reproduction_steps,
+        remediation: form.remediation,
+        labels: form.labels.length ? form.labels : undefined,
+      };
+      return editingId
+        ? updateVulnerabilityTemplate(editingId, data)
+        : createVulnerabilityTemplate(data);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["vulnerability-templates"] });
-      setCreateOpen(false);
-      setCreateForm(CREATE_FORM_INITIAL);
+      closeModal();
+      toast.success(editingId ? "Сохранено" : "Создано");
     },
     onError: () => toast.error("Ошибка"),
   });
@@ -524,9 +515,9 @@ function VulnerabilityTemplatesSection() {
     onError: () => toast.error("Ошибка удаления"),
   });
 
-  const handleCreate = () => {
-    if (!createForm.bug_name.trim()) return toast.error("Введите название");
-    addMut.mutate();
+  const handleSave = () => {
+    if (!form.bug_name.trim()) return toast.error("Введите название");
+    saveMut.mutate();
   };
 
   return (
@@ -575,7 +566,7 @@ function VulnerabilityTemplatesSection() {
               <VulnTemplateRow
                 key={tpl.id}
                 tpl={tpl}
-                onSaved={() => toast.success("Сохранено")}
+                onEdit={() => openEdit(tpl)}
                 onDelete={() => confirm.ask(() => delMut.mutate(tpl.id))}
               />
             ))}
@@ -586,20 +577,20 @@ function VulnerabilityTemplatesSection() {
         </table>
       </div>
 
-      <button type="button" className="btn btn-sm btn-primary" onClick={() => setCreateOpen(true)}>+ Добавить</button>
+      <button type="button" className="btn btn-sm btn-primary" onClick={openCreate}>+ Добавить</button>
 
-      {/* Create modal */}
+      {/* Create / Edit modal */}
       <ModalShell
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        title="Новая типовая уязвимость"
+        open={modalOpen}
+        onClose={closeModal}
+        title={editingId ? "Редактирование типовой уязвимости" : "Новая типовая уязвимость"}
         maxWidth="max-w-3xl"
         className="max-h-[85vh] overflow-y-auto"
         actions={
           <>
-            <button className="btn btn-ghost btn-sm" onClick={() => setCreateOpen(false)}>Отмена</button>
-            <button className="btn btn-primary btn-sm" onClick={handleCreate} disabled={addMut.isPending}>
-              {addMut.isPending ? "Создание\u2026" : "\u203A_ Создать"}
+            <button className="btn btn-ghost btn-sm" onClick={closeModal}>Отмена</button>
+            <button className="btn btn-primary btn-sm" onClick={handleSave} disabled={saveMut.isPending}>
+              {saveMut.isPending ? "Сохранение\u2026" : editingId ? "Сохранить" : "\u203A_ Создать"}
             </button>
           </>
         }
@@ -607,24 +598,24 @@ function VulnerabilityTemplatesSection() {
         <div className="grid grid-cols-3 gap-x-4 gap-y-3">
           <div className="form-control col-span-3">
             <label className="label py-1"><span className="label-text">Название</span></label>
-            <input type="text" className="input input-bordered w-full" value={createForm.bug_name} onChange={(e) => updateCreate("bug_name", e.target.value)} />
+            <input type="text" className="input input-bordered w-full" value={form.bug_name} onChange={(e) => updateField("bug_name", e.target.value)} />
           </div>
 
           <div className="form-control">
             <label className="label py-1"><span className="label-text">Критичность</span></label>
-            <select className="select select-bordered w-full" value={createForm.bug_criticality} onChange={(e) => updateCreate("bug_criticality", e.target.value as Severity)}>
+            <select className="select select-bordered w-full" value={form.bug_criticality} onChange={(e) => updateField("bug_criticality", e.target.value as Severity)}>
               {SEVERITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
 
           <div className="form-control">
             <label className="label py-1"><span className="label-text">CVSS Score</span></label>
-            <input type="number" step={0.1} min={0} max={10} className="input input-bordered w-full font-mono" placeholder="0.0 \u2013 10.0" value={createForm.cvss_score ?? ""} onChange={(e) => updateCreate("cvss_score", e.target.value === "" ? null : parseFloat(e.target.value))} />
+            <input type="number" step={0.1} min={0} max={10} className="input input-bordered w-full font-mono" placeholder="0.0 \u2013 10.0" value={form.cvss_score ?? ""} onChange={(e) => updateField("cvss_score", e.target.value === "" ? null : parseFloat(e.target.value))} />
           </div>
 
           <div className="form-control">
             <label className="label py-1"><span className="label-text">Автоматизация</span></label>
-            <select className="select select-bordered w-full" value={createForm.automation_level} onChange={(e) => updateCreate("automation_level", e.target.value as AutomationLevel)}>
+            <select className="select select-bordered w-full" value={form.automation_level} onChange={(e) => updateField("automation_level", e.target.value as AutomationLevel)}>
               <option value="fully">Полная</option>
               <option value="partially">Частичная</option>
               <option value="no">Нет</option>
@@ -634,7 +625,7 @@ function VulnerabilityTemplatesSection() {
 
           <div className="form-control col-span-2">
             <label className="label py-1"><span className="label-text">CVSS Vector</span></label>
-            <input type="text" className="input input-bordered w-full font-mono text-sm" placeholder="CVSS:4.0/AV:N/AC:L/..." value={createForm.cvss_vector ?? ""} onChange={(e) => updateCreate("cvss_vector", e.target.value || null)} />
+            <input type="text" className="input input-bordered w-full font-mono text-sm" placeholder="CVSS:4.0/AV:N/AC:L/..." value={form.cvss_vector ?? ""} onChange={(e) => updateField("cvss_vector", e.target.value || null)} />
           </div>
           <div className="form-control">
             <label className="label py-1 opacity-0 select-none"><span className="label-text">—</span></label>
@@ -645,22 +636,34 @@ function VulnerabilityTemplatesSection() {
 
           <div className="form-control col-span-3">
             <label className="label py-1"><span className="label-text">Описание</span></label>
-            <textarea className="textarea textarea-bordered w-full" rows={3} placeholder="Описание уязвимости" value={createForm.bug_description ?? ""} onChange={(e) => updateCreate("bug_description", e.target.value || null)} />
+            <RichEditor
+              value={form.bug_description}
+              onChange={(v) => updateField("bug_description", v)}
+              placeholder="Описание уязвимости"
+            />
           </div>
 
           <div className="form-control col-span-3">
             <label className="label py-1"><span className="label-text">Шаги воспроизведения</span></label>
-            <textarea className="textarea textarea-bordered w-full" rows={3} placeholder="Шаги для воспроизведения" value={createForm.reproduction_steps ?? ""} onChange={(e) => updateCreate("reproduction_steps", e.target.value || null)} />
+            <RichEditor
+              value={form.reproduction_steps}
+              onChange={(v) => updateField("reproduction_steps", v)}
+              placeholder="Шаги для воспроизведения"
+            />
           </div>
 
           <div className="form-control col-span-3">
             <label className="label py-1"><span className="label-text">Рекомендации</span></label>
-            <textarea className="textarea textarea-bordered w-full" rows={3} placeholder="Рекомендации по устранению" value={createForm.remediation ?? ""} onChange={(e) => updateCreate("remediation", e.target.value || null)} />
+            <RichEditor
+              value={form.remediation}
+              onChange={(v) => updateField("remediation", v)}
+              placeholder="Рекомендации по устранению"
+            />
           </div>
 
           <div className="form-control col-span-3">
             <label className="label py-1"><span className="label-text">Метки</span></label>
-            <VulnTemplateLabelToggles selected={createForm.labels} onChange={(labels) => updateCreate("labels", labels)} />
+            <VulnTemplateLabelToggles selected={form.labels} onChange={(labels) => updateField("labels", labels)} />
           </div>
         </div>
       </ModalShell>
@@ -668,12 +671,12 @@ function VulnerabilityTemplatesSection() {
       <CVSSCalculatorModal
         open={cvssOpen}
         onClose={() => setCvssOpen(false)}
-        initialVector={createForm.cvss_vector}
+        initialVector={form.cvss_vector}
         theme={theme}
         onApply={({ vector, score, severity }) => {
-          updateCreate("cvss_vector", vector);
-          updateCreate("cvss_score", score);
-          updateCreate("bug_criticality", severity);
+          updateField("cvss_vector", vector);
+          updateField("cvss_score", score);
+          updateField("bug_criticality", severity);
           setCvssOpen(false);
         }}
       />

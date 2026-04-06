@@ -1,5 +1,7 @@
 from pydantic_settings import BaseSettings
 
+from app.prompts import SYSTEM_PROMPT
+
 
 class Settings(BaseSettings):
     log_level: str = "INFO"
@@ -10,6 +12,7 @@ class Settings(BaseSettings):
     llm_auth_key: str = ""
     llm_temperature: float = 0.1
     llm_max_tokens: int = 2048
+    llm_system_prompt: str = SYSTEM_PROMPT
 
 
 settings = Settings()

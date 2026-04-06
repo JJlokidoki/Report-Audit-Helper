@@ -20,6 +20,7 @@ class AISettings(BaseModel):
     llm_api_key: str
     llm_temperature: float
     llm_max_tokens: int
+    llm_system_prompt: str
 
 
 class AISettingsResponse(AISettings):
@@ -35,6 +36,7 @@ async def get_settings():
         llm_api_key=settings.llm_api_key,
         llm_temperature=settings.llm_temperature,
         llm_max_tokens=settings.llm_max_tokens,
+        llm_system_prompt=settings.llm_system_prompt,
         providers=PROVIDERS,
     )
 
@@ -46,6 +48,7 @@ class AISettingsUpdate(BaseModel):
     llm_api_key: str | None = None
     llm_temperature: float | None = None
     llm_max_tokens: int | None = None
+    llm_system_prompt: str | None = None
 
 
 @router.put("/settings", response_model=AISettingsResponse)

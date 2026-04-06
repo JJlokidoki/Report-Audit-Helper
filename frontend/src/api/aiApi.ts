@@ -61,27 +61,33 @@ async function readSSE(
   onChunk: (text: string) => void,
 ): Promise<SSEResult> {
   let fields: VulnFields | null = null;
+  let sseError: string | null = null;
   let buffer = "";
+
+  const processBlock = (part: string) => {
+    let event = "";
+    let data = "";
+    for (const line of part.split("\n")) {
+      if (line.startsWith("event: ")) event = line.slice(7);
+      else if (line.startsWith("data: ")) data = line.slice(6);
+    }
+    if (event === "chunk") {
+      try { onChunk(JSON.parse(data)); } catch { onChunk(data); }
+    } else if (event === "done") {
+      try { fields = JSON.parse(data); } catch { /* ignore */ }
+    } else if (event === "error") {
+      sseError = data.startsWith('"') ? JSON.parse(data) : data;
+    }
+  };
 
   for await (const raw of readStream(resp)) {
     buffer += raw;
     const parts = buffer.split("\n\n");
     buffer = parts.pop() ?? "";
-
-    for (const part of parts) {
-      let event = "";
-      let data = "";
-      for (const line of part.split("\n")) {
-        if (line.startsWith("event: ")) event = line.slice(7);
-        else if (line.startsWith("data: ")) data = line.slice(6);
-      }
-      if (event === "chunk") {
-        try { onChunk(JSON.parse(data)); } catch { onChunk(data); }
-      } else if (event === "done") {
-        try { fields = JSON.parse(data); } catch { /* ignore */ }
-      }
-    }
+    for (const part of parts) processBlock(part);
   }
+  if (buffer.trim()) processBlock(buffer.trim());
+  if (sseError) throw new Error(sseError);
   return { fields };
 }
 
@@ -136,6 +142,7 @@ export interface AISettings {
   llm_api_key: string;
   llm_temperature: number;
   llm_max_tokens: number;
+  llm_system_prompt: string;
   providers: string[];
 }
 

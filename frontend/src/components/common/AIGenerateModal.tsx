@@ -95,7 +95,8 @@ export default function AIGenerateModal({ open, onClose, onApply }: Props) {
       setHistory((prev) => [...prev, { role: "assistant", content: output }]);
     } catch (e: unknown) {
       if (e instanceof Error && e.name !== "AbortError") {
-        setCurrentOutput((prev) => prev + "\n[Ошибка соединения с AI-сервисом]");
+        const msg = e.message || "Ошибка соединения с AI-сервисом";
+        setCurrentOutput((prev) => prev + `\n\n**Ошибка:** ${msg}`);
       }
     } finally {
       setStreaming(false);
@@ -143,6 +144,9 @@ export default function AIGenerateModal({ open, onClose, onApply }: Props) {
   if (!open) return null;
 
   const lastAssistant = [...history].reverse().find((m) => m.role === "assistant");
+  const hasReport = !!(serverFields?.bug_name
+    || (lastAssistant && parseVulnMarkdown(lastAssistant.content).bug_name));
+  const awaitingAnswer = !!lastAssistant && !streaming && !hasReport;
 
   return (
     <dialog className="modal modal-open">
@@ -196,6 +200,11 @@ export default function AIGenerateModal({ open, onClose, onApply }: Props) {
               </Tag>
             ))}
           </div>
+        )}
+
+        {/* Hint when AI asked questions */}
+        {awaitingAnswer && (
+          <p className="text-xs text-warning">Ответьте на вопросы AI для генерации полного отчёта</p>
         )}
 
         {/* Input area */}
@@ -257,7 +266,7 @@ export default function AIGenerateModal({ open, onClose, onApply }: Props) {
             <button
               className="btn btn-sm btn-primary font-display tracking-wider"
               onClick={handleApply}
-              disabled={!lastAssistant || streaming}
+              disabled={!lastAssistant || streaming || !hasReport}
               title="Заполнить поля формы из последнего ответа AI"
             >
               Применить →

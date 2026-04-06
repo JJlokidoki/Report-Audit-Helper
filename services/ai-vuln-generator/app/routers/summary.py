@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from app.prompts import SUMMARY_PROMPT
 from app.providers import get_provider
+from app.routers.generate import _AUTH_ERROR_MSG, _is_auth_error
 
 router = APIRouter(prefix="/api/ai", tags=["summary"])
 
@@ -32,5 +33,7 @@ async def generate_summary(req: SummaryRequest):
             _executor, lambda: provider.chat(msgs)
         )
     except Exception as e:
+        if _is_auth_error(e):
+            raise HTTPException(401, _AUTH_ERROR_MSG)
         raise HTTPException(500, str(e))
     return SummaryResponse(summary_markdown=result.strip())

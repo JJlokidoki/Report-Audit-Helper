@@ -7,12 +7,27 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from app.config import settings
 from app.parser import parse_vuln_markdown
-from app.prompts import KILLCHAIN_PROMPT, SYSTEM_PROMPT
+from app.prompts import KILLCHAIN_PROMPT
 from app.providers import get_provider
 from app.sse import format_chunk, format_done, format_error
 
 router = APIRouter(prefix="/api/ai", tags=["generate"])
+
+_AUTH_ERROR_MSG = "Ошибка авторизации LLM-провайдера. Обновите токен в настройках AI."
+
+
+def _is_auth_error(e: Exception) -> bool:
+    """Check if exception is a 401 auth error from any provider."""
+    # openai.AuthenticationError / openai.APIStatusError
+    if hasattr(e, "status_code") and getattr(e, "status_code", None) == 401:
+        return True
+    # httpx.HTTPStatusError (GigaChat)
+    resp = getattr(e, "response", None)
+    if resp is not None and getattr(resp, "status_code", None) == 401:
+        return True
+    return False
 
 _executor = ThreadPoolExecutor(max_workers=4)
 
@@ -80,12 +95,14 @@ async def _sync_stream_to_async(sync_gen: Iterator[str]):
 async def generate(req: GenerateRequest):
     provider = get_provider()
     images = _decode_images(req.images) if req.images else []
-    msgs = _build_messages(req.history, images, SYSTEM_PROMPT)
+    msgs = _build_messages(req.history, images, settings.llm_system_prompt)
     try:
         raw = await asyncio.get_event_loop().run_in_executor(
             _executor, lambda: provider.chat(msgs, images or None)
         )
     except Exception as e:
+        if _is_auth_error(e):
+            raise HTTPException(401, _AUTH_ERROR_MSG)
         raise HTTPException(500, str(e))
     fields = parse_vuln_markdown(raw)
     return GenerateResponse(
@@ -99,7 +116,7 @@ async def generate(req: GenerateRequest):
 async def generate_stream(req: GenerateRequest):
     provider = get_provider()
     images = _decode_images(req.images) if req.images else []
-    msgs = _build_messages(req.history, images, SYSTEM_PROMPT)
+    msgs = _build_messages(req.history, images, settings.llm_system_prompt)
 
     async def streamer():
         accumulated = ""
@@ -110,7 +127,8 @@ async def generate_stream(req: GenerateRequest):
                 accumulated += text
                 yield format_chunk(text)
         except Exception as e:
-            yield format_error(str(e))
+            msg = _AUTH_ERROR_MSG if _is_auth_error(e) else str(e)
+            yield format_error(msg)
             return
         fields = parse_vuln_markdown(accumulated)
         yield format_done(fields.to_dict())
@@ -134,6 +152,7 @@ async def generate_killchain_stream(req: GenerateRequest):
             async for chunk in _sync_stream_to_async(gen):
                 yield chunk
         except Exception as e:
-            yield f"\n[ERROR] {e}".encode()
+            msg = _AUTH_ERROR_MSG if _is_auth_error(e) else str(e)
+            yield f"\n[ERROR] {msg}".encode()
 
     return StreamingResponse(streamer(), media_type="text/plain")

@@ -21,6 +21,7 @@ export default function AISettingsPage() {
         llm_base_url: data.llm_base_url,
         llm_temperature: data.llm_temperature,
         llm_max_tokens: data.llm_max_tokens,
+        llm_system_prompt: data.llm_system_prompt,
       });
     }
   }, [data]);
@@ -127,6 +128,16 @@ export default function AISettingsPage() {
             onChange={(e) => set("llm_max_tokens", parseInt(e.target.value))}
           />
         </div>
+      </div>
+
+      <div className="form-control mt-4">
+        <label className="label py-1"><span className="label-text">Системный промпт</span></label>
+        <textarea
+          className="textarea textarea-bordered w-full font-mono text-xs leading-relaxed"
+          rows={12}
+          value={form.llm_system_prompt ?? ""}
+          onChange={(e) => set("llm_system_prompt", e.target.value)}
+        />
       </div>
 
       <div className="flex gap-2 pt-4">

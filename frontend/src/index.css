@@ -194,6 +194,66 @@ body {
   user-select: none;
 }
 
+/* ── AI Markdown Renderer ─────────────────────────────── */
+
+.ai-markdown {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+.ai-markdown h2 {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0.75em 0 0.5em;
+}
+.ai-markdown h3 {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0.75em 0 0.35em;
+}
+.ai-markdown p {
+  margin: 0.4em 0;
+}
+.ai-markdown ol,
+.ai-markdown ul {
+  padding-left: 1.5em;
+  margin: 0.4em 0;
+}
+.ai-markdown ol { list-style: decimal; }
+.ai-markdown ul { list-style: disc; }
+.ai-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin: 0.5em 0;
+}
+.ai-markdown th,
+.ai-markdown td {
+  border: 1px solid oklch(from var(--color-base-content) l c h / 0.15);
+  padding: 0.3em 0.6em;
+  text-align: left;
+}
+.ai-markdown th {
+  font-weight: 600;
+  background: oklch(from var(--color-base-content) l c h / 0.06);
+}
+.ai-markdown strong {
+  font-weight: 600;
+}
+.ai-markdown code {
+  font-family: var(--font-mono);
+  font-size: 0.8em;
+  padding: 0.1em 0.3em;
+  border-radius: 0.2rem;
+  background: oklch(from var(--color-base-300) l c h);
+}
+.ai-markdown img {
+  max-width: 100%;
+  margin: 0.5em 0;
+}
+
 /* ── TipTap editor content ──────────────────────────────── */
 .tiptap {
   outline: none;

@@ -11,9 +11,20 @@ export interface GenerateRequest {
   filenames?: string[];
 }
 
+export interface VulnFields {
+  bug_name?: string;
+  bug_description?: string;
+  reproduction_steps?: string;
+  remediation?: string;
+  cvss_score?: number;
+  cvss_vector?: string;
+  bug_criticality?: string;
+}
+
 export interface GenerateResponse {
   markdown: string;
   raw: string;
+  fields?: VulnFields;
 }
 
 export interface SummaryResponse {
@@ -41,6 +52,39 @@ async function* readStream(resp: Response): AsyncGenerator<string> {
   }
 }
 
+interface SSEResult {
+  fields: VulnFields | null;
+}
+
+async function readSSE(
+  resp: Response,
+  onChunk: (text: string) => void,
+): Promise<SSEResult> {
+  let fields: VulnFields | null = null;
+  let buffer = "";
+
+  for await (const raw of readStream(resp)) {
+    buffer += raw;
+    const parts = buffer.split("\n\n");
+    buffer = parts.pop() ?? "";
+
+    for (const part of parts) {
+      let event = "";
+      let data = "";
+      for (const line of part.split("\n")) {
+        if (line.startsWith("event: ")) event = line.slice(7);
+        else if (line.startsWith("data: ")) data = line.slice(6);
+      }
+      if (event === "chunk") {
+        try { onChunk(JSON.parse(data)); } catch { onChunk(data); }
+      } else if (event === "done") {
+        try { fields = JSON.parse(data); } catch { /* ignore */ }
+      }
+    }
+  }
+  return { fields };
+}
+
 export async function generateVuln(req: GenerateRequest): Promise<GenerateResponse> {
   const resp = await postJSON("/api/ai/generate", req);
   return resp.json();
@@ -50,7 +94,7 @@ export async function streamVuln(
   req: GenerateRequest,
   onChunk: (chunk: string) => void,
   signal?: AbortSignal
-): Promise<void> {
+): Promise<VulnFields | null> {
   const resp = await fetch(`${AI_BASE_URL}/api/ai/generate/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -58,7 +102,8 @@ export async function streamVuln(
     signal,
   });
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-  for await (const chunk of readStream(resp)) onChunk(chunk);
+  const { fields } = await readSSE(resp, onChunk);
+  return fields;
 }
 
 export async function streamKillchain(

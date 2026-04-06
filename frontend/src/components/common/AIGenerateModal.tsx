@@ -1,9 +1,12 @@
 import { useRef, useState } from "react";
+import { marked } from "marked";
 import type { Severity } from "../../types";
 import { streamVuln, toBase64 } from "../../api/aiApi";
-import type { ChatMessage } from "../../api/aiApi";
+import type { ChatMessage, VulnFields as ServerVulnFields } from "../../api/aiApi";
 import { mdToHtml } from "../../utils/mdToHtml";
 import Tag from "./Tag";
+
+marked.setOptions({ breaks: true, gfm: true });
 
 export interface VulnFields {
   bug_name?: string;
@@ -41,9 +44,9 @@ function parseVulnMarkdown(md: string): VulnFields {
 
   return {
     ...(title && { bug_name: title }),
-    ...(desc && { bug_description: mdToHtml(desc) }),
-    ...(steps && { reproduction_steps: mdToHtml(steps) }),
-    ...(recs && { remediation: mdToHtml(recs) }),
+    ...(desc && { bug_description: desc }),
+    ...(steps && { reproduction_steps: steps }),
+    ...(recs && { remediation: recs }),
     ...(cvssScore && { cvss_score: parseFloat(cvssScore) }),
     ...(cvssVector && { cvss_vector: cvssVector }),
     ...(severity && { bug_criticality: severity }),
@@ -56,6 +59,7 @@ export default function AIGenerateModal({ open, onClose, onApply }: Props) {
   const [images, setImages] = useState<File[]>([]);
   const [streaming, setStreaming] = useState(false);
   const [currentOutput, setCurrentOutput] = useState("");
+  const [serverFields, setServerFields] = useState<ServerVulnFields | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const outputRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -68,6 +72,7 @@ export default function AIGenerateModal({ open, onClose, onApply }: Props) {
     setHistory(newHistory);
     setInput("");
     setCurrentOutput("");
+    setServerFields(null);
     setStreaming(true);
 
     const b64images = await Promise.all(images.map(toBase64));
@@ -77,7 +82,7 @@ export default function AIGenerateModal({ open, onClose, onApply }: Props) {
     let output = "";
 
     try {
-      await streamVuln(
+      const fields = await streamVuln(
         { history: newHistory, images: b64images, filenames: images.map((f) => f.name) },
         (chunk) => {
           output += chunk;
@@ -86,6 +91,7 @@ export default function AIGenerateModal({ open, onClose, onApply }: Props) {
         },
         abortRef.current.signal
       );
+      setServerFields(fields);
       setHistory((prev) => [...prev, { role: "assistant", content: output }]);
     } catch (e: unknown) {
       if (e instanceof Error && e.name !== "AbortError") {
@@ -104,7 +110,19 @@ export default function AIGenerateModal({ open, onClose, onApply }: Props) {
   const handleApply = () => {
     const lastAssistant = [...history].reverse().find((m) => m.role === "assistant");
     if (!lastAssistant) return;
-    onApply(parseVulnMarkdown(lastAssistant.content));
+
+    // Use server-parsed fields if available, fall back to client-side regex
+    const src = serverFields ?? parseVulnMarkdown(lastAssistant.content);
+    const fields: VulnFields = {
+      ...(src.bug_name != null && { bug_name: src.bug_name }),
+      ...(src.bug_description != null && { bug_description: mdToHtml(src.bug_description) }),
+      ...(src.reproduction_steps != null && { reproduction_steps: mdToHtml(src.reproduction_steps) }),
+      ...(src.remediation != null && { remediation: mdToHtml(src.remediation) }),
+      ...(src.cvss_score != null && { cvss_score: src.cvss_score }),
+      ...(src.cvss_vector != null && { cvss_vector: src.cvss_vector }),
+      ...(src.bug_criticality != null && { bug_criticality: src.bug_criticality as Severity }),
+    };
+    onApply(fields);
     onClose();
   };
 
@@ -119,6 +137,7 @@ export default function AIGenerateModal({ open, onClose, onApply }: Props) {
     setCurrentOutput("");
     setInput("");
     setImages([]);
+    setServerFields(null);
   };
 
   if (!open) return null;
@@ -136,7 +155,7 @@ export default function AIGenerateModal({ open, onClose, onApply }: Props) {
         {/* Conversation history */}
         <div
           ref={outputRef}
-          className="flex-1 overflow-y-auto min-h-48 max-h-96 bg-base-200 rounded p-3 space-y-3 text-sm font-mono"
+          className="flex-1 overflow-y-auto min-h-48 max-h-96 bg-base-200 rounded p-3 space-y-3 text-sm"
         >
           {history.length === 0 && !streaming && (
             <p className="text-base-content/40 text-center mt-8">
@@ -144,19 +163,24 @@ export default function AIGenerateModal({ open, onClose, onApply }: Props) {
             </p>
           )}
           {history.map((m, i) => (
-            <div key={i} className={m.role === "user" ? "text-primary" : "text-base-content whitespace-pre-wrap"}>
+            <div key={i}>
               {m.role === "user" ? (
-                <span className="font-bold text-xs text-primary/60 mr-1">&gt;</span>
+                <div className="text-primary font-mono">
+                  <span className="font-bold text-xs text-primary/60 mr-1">&gt;</span>
+                  {m.content}
+                </div>
               ) : (
-                <span className="font-bold text-xs text-success/60 mr-1">AI:</span>
+                <div>
+                  <span className="font-bold text-xs text-success/60 mr-1">AI:</span>
+                  <div className="ai-markdown mt-1" dangerouslySetInnerHTML={{ __html: marked.parse(m.content) as string }} />
+                </div>
               )}
-              {m.content}
             </div>
           ))}
           {streaming && currentOutput && (
-            <div className="text-base-content whitespace-pre-wrap">
+            <div>
               <span className="font-bold text-xs text-success/60 mr-1">AI:</span>
-              {currentOutput}
+              <div className="ai-markdown mt-1" dangerouslySetInnerHTML={{ __html: marked.parse(currentOutput) as string }} />
               <span className="animate-pulse">▎</span>
             </div>
           )}

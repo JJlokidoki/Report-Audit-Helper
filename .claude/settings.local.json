@@ -47,7 +47,8 @@
       "Bash(curl -s http://localhost:8001/api/reports/5/checklist)",
       "Bash(npx tsc:*)",
       "Bash(grep -r \"VulnerabilityCreate\\\\|def create_vulnerability\" /d/projects/pentest-audit-helper --include=*.py --include=*.ts --include=*.tsx)",
-      "Bash(grep -r \"createVulnerability\\\\|POST.*vulnerable\" /d/projects/pentest-audit-helper/frontend --include=*.ts --include=*.tsx)"
+      "Bash(grep -r \"createVulnerability\\\\|POST.*vulnerable\" /d/projects/pentest-audit-helper/frontend --include=*.ts --include=*.tsx)",
+      "Bash(ls /d/projects/pentest-audit-helper/frontend/*.config.*)"
     ]
   }
 }

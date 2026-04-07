@@ -232,16 +232,40 @@ function Checklist({ data }: { data: ReportData }) {
   );
 }
 
-// ── Sections (used in both passes) ──────────────────────────────────────────
+// ── Section registry ─────────────────────────────────────────────────────────
 
-export function Sections({ data }: { data: ReportData }) {
+const SECTION_COMPONENTS: Record<string, React.FC<{ data: ReportData; headings?: Heading[] }>> = {
+  title: ({ data }) => <TitlePage data={data} />,
+  toc: ({ headings }) => <TOC headings={headings ?? []} />,
+  general_info: ({ data }) => <GeneralInfo data={data} />,
+  test_results: ({ data }) => <TestResults data={data} />,
+  vulnerability: ({ data }) => <VulnerabilitySection data={data} />,
+  threat_classification: () => <ThreatClassification />,
+  checklist: ({ data }) => <Checklist data={data} />,
+};
+
+// ── Section anchors ──────────────────────────────────────────────────────────
+
+const SECTION_ANCHORS: Record<string, string> = {
+  title: "title-page",
+  toc: "toc",
+  general_info: "general-info",
+  test_results: "test-results",
+  vulnerability: "vulnerabilities",
+  threat_classification: "threat-class",
+  checklist: "checklist",
+};
+
+// ── Sections (used in pass 1 — heading collection, no title/toc) ────────────
+
+export function Sections({ data, sectionOrder }: { data: ReportData; sectionOrder: string[] }) {
+  const contentSections = sectionOrder.filter(s => s !== "title" && s !== "toc");
   return (
     <>
-      <GeneralInfo data={data} />
-      <TestResults data={data} />
-      <VulnerabilitySection data={data} />
-      <ThreatClassification />
-      <Checklist data={data} />
+      {contentSections.map((section) => {
+        const Component = SECTION_COMPONENTS[section];
+        return Component ? <Component key={section} data={data} /> : null;
+      })}
     </>
   );
 }
@@ -251,21 +275,31 @@ export function Sections({ data }: { data: ReportData }) {
 export function ReportDocument({
   data,
   headings,
+  sectionOrder,
 }: {
   data: ReportData;
   headings: Heading[];
+  sectionOrder: string[];
 }) {
   return (
     <>
-      <div className="page-break" id="title-page">
-        <TitlePage data={data} />
-      </div>
-      <div className="page-break" id="toc">
-        <TOC headings={headings} />
-      </div>
-      <div className="page-break">
-        <Sections data={data} />
-      </div>
+      {sectionOrder.map((section) => {
+        const anchor = SECTION_ANCHORS[section];
+        if (section === "toc") {
+          return (
+            <div key={section} className="page-break" id={anchor}>
+              <TOC headings={headings} />
+            </div>
+          );
+        }
+        const Component = SECTION_COMPONENTS[section];
+        if (!Component) return null;
+        return (
+          <div key={section} className="page-break" id={anchor}>
+            <Component data={data} headings={headings} />
+          </div>
+        );
+      })}
     </>
   );
 }

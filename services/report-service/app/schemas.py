@@ -234,6 +234,10 @@ class PdfTemplateUpdate(BaseModel):
     css: str | None = None
 
 
+class PdfTemplateReorder(BaseModel):
+    orders: list[dict]  # [{id: int, sort_order: int}]
+
+
 class PdfTemplateResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -242,4 +246,5 @@ class PdfTemplateResponse(BaseModel):
     section: str
     content: str
     css: str | None
+    sort_order: int
     updated_at: datetime

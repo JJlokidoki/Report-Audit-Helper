@@ -1,11 +1,27 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import Editor, { type Monaco } from "@monaco-editor/react";
 import toast from "react-hot-toast";
 import {
   getPdfTemplates,
   updatePdfTemplate,
   resetPdfTemplate,
+  reorderPdfTemplates,
   previewPdfTemplate,
   previewPdfTemplateAsPdf,
   type PdfTemplate,
@@ -30,7 +46,75 @@ const SECTION_LABELS: Record<string, string> = {
   styles: "CSS стили",
 };
 
-const SECTION_ORDER = Object.keys(SECTION_LABELS);
+const SECTION_ANCHORS: Record<string, string> = {
+  title: "title-page",
+  toc: "toc",
+  general_info: "general-info",
+  test_results: "test-results",
+  vulnerability: "vulnerabilities",
+  threat_classification: "threat-class",
+  checklist: "checklist",
+  styles: "",
+};
+
+const PAGE_BREAK_STYLES = `
+  <style>
+    .page-break + .page-break, .checklist-section {
+      border-top: 2px dashed #bbb;
+      margin-top: 2em;
+      padding-top: 2.5em;
+      position: relative;
+    }
+    .page-break + .page-break::before, .checklist-section::before {
+      content: "— page break —";
+      position: absolute;
+      top: -0.7em;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #fff;
+      padding: 0 1em;
+      color: #aaa;
+      font-size: 10px;
+      font-family: monospace;
+      letter-spacing: 0.1em;
+      white-space: nowrap;
+    }
+  </style>`;
+
+function SortableSectionItem({
+  section,
+  isActive,
+  onClick,
+}: {
+  section: string;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section });
+  const style = { transform: CSS.Transform.toString(transform), transition };
+
+  return (
+    <button
+      ref={setNodeRef}
+      style={style}
+      onClick={onClick}
+      className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm border-l-2 transition-colors ${
+        isDragging ? "opacity-50" : ""
+      } ${
+        isActive
+          ? "border-primary text-primary bg-primary/6 font-medium"
+          : "border-transparent text-base-content/55 hover:text-base-content hover:border-base-content/20 hover:bg-base-300/30"
+      }`}
+      {...attributes}
+      {...listeners}
+    >
+      <span className={`font-mono text-[10px] ${isActive ? "text-primary" : "text-base-content/30"}`}>
+        {isActive ? "▶" : "☰"}
+      </span>
+      <span className="leading-tight">{SECTION_LABELS[section] ?? section}</span>
+    </button>
+  );
+}
 
 export default function PdfTemplateEditor() {
   const queryClient = useQueryClient();
@@ -56,18 +140,37 @@ export default function PdfTemplateEditor() {
     queryFn: () => getPdfTemplates(activeType),
   });
 
-  const activeTemplate = templates?.find((t) => t.section === activeSection);
+  // Split templates into sortable sections and fixed styles
+  const contentSections = (templates ?? []).filter((t) => t.section !== "styles");
   const stylesTemplate = templates?.find((t) => t.section === "styles");
+  const activeTemplate = templates?.find((t) => t.section === activeSection);
 
-  const SECTION_ANCHORS: Record<string, string> = {
-    title: "title-page",
-    toc: "toc",
-    general_info: "general-info",
-    test_results: "test-results",
-    vulnerability: "vulnerabilities",
-    threat_classification: "threat-class",
-    checklist: "checklist",
-    styles: "",
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor),
+  );
+
+  const reorderMut = useMutation({
+    mutationFn: (orders: { id: number; sort_order: number }[]) => reorderPdfTemplates(orders),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pdf-templates", activeType] });
+      previewRenderedRef.current = false;
+      fetchPreview(editorContent);
+    },
+    onError: () => toast.error("Ошибка сохранения порядка"),
+  });
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIdx = contentSections.findIndex((t) => t.section === active.id);
+    const newIdx = contentSections.findIndex((t) => t.section === over.id);
+    if (oldIdx === -1 || newIdx === -1) return;
+    const reordered = [...contentSections];
+    const [moved] = reordered.splice(oldIdx, 1);
+    if (!moved) return;
+    reordered.splice(newIdx, 0, moved);
+    reorderMut.mutate(reordered.map((t, i) => ({ id: t.id, sort_order: i })));
   };
 
   const scrollToSection = (section: string) => {
@@ -101,30 +204,6 @@ export default function PdfTemplateEditor() {
     }
   }, [activeTemplate?.id]);
 
-  const PAGE_BREAK_STYLES = `
-    <style>
-      .page-break + .page-break, .checklist-section {
-        border-top: 2px dashed #bbb;
-        margin-top: 2em;
-        padding-top: 2.5em;
-        position: relative;
-      }
-      .page-break + .page-break::before, .checklist-section::before {
-        content: "— page break —";
-        position: absolute;
-        top: -0.7em;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #fff;
-        padding: 0 1em;
-        color: #aaa;
-        font-size: 10px;
-        font-family: monospace;
-        letter-spacing: 0.1em;
-        white-space: nowrap;
-      }
-    </style>`;
-
   const fetchPreview = useCallback(
     async (content: string, mode?: "html" | "pdf") => {
       const m = mode ?? previewMode;
@@ -134,6 +213,7 @@ export default function PdfTemplateEditor() {
         section: activeSection,
         content,
         css: stylesTemplate?.content,
+        section_order: contentSections.map((t) => t.section),
       };
       try {
         if (m === "pdf") {
@@ -158,7 +238,7 @@ export default function PdfTemplateEditor() {
         setPreviewLoading(false);
       }
     },
-    [activeType, activeSection, stylesTemplate?.content, previewMode, previewPdfUrl]
+    [activeType, activeSection, stylesTemplate?.content, previewMode, previewPdfUrl, contentSections]
   );
 
   const handleEditorChange = (value: string | undefined) => {
@@ -293,34 +373,38 @@ export default function PdfTemplateEditor() {
       ) : (
         <div className="flex flex-1 gap-0 overflow-hidden border border-base-300 rounded-sm">
           {/* Section sidebar */}
-          <div className="w-52 shrink-0 bg-base-200 border-r border-base-300 overflow-y-auto">
+          <div className="w-52 shrink-0 bg-base-200 border-r border-base-300 overflow-y-auto flex flex-col">
             <div className="px-3 py-2 label-section">Секции</div>
-            {SECTION_ORDER.map((section) => {
-              const tmpl = templates.find((t) => t.section === section);
-              if (!tmpl) return null;
-              const isActive = activeSection === section;
-              const isCode = section === "styles";
-              return (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={contentSections.map((t) => t.section)} strategy={verticalListSortingStrategy}>
+                {contentSections.map((t) => (
+                  <SortableSectionItem
+                    key={t.section}
+                    section={t.section}
+                    isActive={activeSection === t.section}
+                    onClick={() => handleSectionChange(t.section)}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
+            {stylesTemplate && (
+              <>
+                <div className="mx-3 my-1 border-t border-base-300/60" />
                 <button
-                  key={section}
-                  onClick={() => handleSectionChange(section)}
+                  onClick={() => handleSectionChange("styles")}
                   className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm border-l-2 transition-colors ${
-                    isActive
+                    activeSection === "styles"
                       ? "border-primary text-primary bg-primary/6 font-medium"
                       : "border-transparent text-base-content/55 hover:text-base-content hover:border-base-content/20 hover:bg-base-300/30"
                   }`}
                 >
-                  <span
-                    className={`font-mono text-[10px] ${isActive ? "text-primary" : "text-base-content/30"}`}
-                  >
-                    {isActive ? "▶" : "◇"}
+                  <span className={`font-mono text-[10px] ${activeSection === "styles" ? "text-primary" : "text-base-content/30"}`}>
+                    {activeSection === "styles" ? "▶" : "◇"}
                   </span>
-                  <span className={`leading-tight ${isCode ? "font-mono text-xs" : ""}`}>
-                    {SECTION_LABELS[section]}
-                  </span>
+                  <span className="leading-tight font-mono text-xs">CSS стили</span>
                 </button>
-              );
-            })}
+              </>
+            )}
           </div>
 
           {/* Main content: editor (left) + preview (right) side by side */}
@@ -330,7 +414,7 @@ export default function PdfTemplateEditor() {
               <div className="flex items-center gap-2 px-3 py-1.5 bg-base-200 border-b border-base-300 shrink-0">
                 <span className="label-section">Редактор</span>
                 <span className="font-mono text-[10px] text-base-content/30 tracking-wider">
-                  {editorLanguage === "css" ? "CSS" : "TSX"}
+                  {editorLanguage === "css" ? "CSS" : "HTML"}
                 </span>
                 {isDirty && (
                   <span className="font-mono text-[10px] tracking-widest text-warning/70">

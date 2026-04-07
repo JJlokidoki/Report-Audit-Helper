@@ -215,13 +215,14 @@ async def seed_pdf_templates(db: AsyncSession) -> None:
 
     added = 0
     for rt in REPORT_TYPES:
-        for section in SECTIONS:
+        for order, section in enumerate(SECTIONS):
             if (rt, section) not in existing:
                 db.add(PdfTemplate(
                     report_type=rt,
                     section=section,
                     content=_DEFAULT_CONTENT.get(section, ""),
                     css=None,
+                    sort_order=order,
                 ))
                 added += 1
 

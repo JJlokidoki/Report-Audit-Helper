@@ -85,6 +85,8 @@ async def export_pdf(report_id: int):
             (t["content"] for t in pdf_templates if t.get("section") == "styles"),
             "",
         )
+        # Section order from DB (sorted by sort_order)
+        section_order = [t["section"] for t in pdf_templates if t.get("section") != "styles"]
 
         data = {
             "report": report,
@@ -93,7 +95,7 @@ async def export_pdf(report_id: int):
             "checklist": checklist,
         }
 
-        html = await render_react_to_html(report_type, data, global_css=global_css)
+        html = await render_react_to_html(report_type, data, global_css=global_css, section_order=section_order)
         pdf_buf = await html_to_pdf(html)
 
     except FileNotFoundError as e:
@@ -185,9 +187,10 @@ async def preview_pdf_template(body: dict):
     section = body.get("section")
     content = body.get("content")
     css = body.get("css")
+    section_order = body.get("section_order")
 
     try:
-        html = await render_preview(report_type, section, content, css)
+        html = await render_preview(report_type, section, content, css, section_order)
         return {"html": html}
     except Exception as e:
         logger.exception("Preview render failed")
@@ -203,9 +206,10 @@ async def preview_pdf_template_as_pdf(body: dict):
     section = body.get("section")
     content = body.get("content")
     css = body.get("css")
+    section_order = body.get("section_order")
 
     try:
-        html = await render_preview(report_type, section, content, css)
+        html = await render_preview(report_type, section, content, css, section_order)
         pdf_buf = await html_to_pdf(html)
         return StreamingResponse(
             pdf_buf,

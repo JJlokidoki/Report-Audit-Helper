@@ -233,4 +233,5 @@ class PdfTemplate(Base):
     section: Mapped[str] = mapped_column(String(50))
     content: Mapped[str] = mapped_column(Text, default="")
     css: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())

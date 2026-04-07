@@ -64,4 +64,5 @@ export interface RenderInput {
   data: ReportData;
   templates: Record<string, string>;
   globalCss: string;
+  sectionOrder: string[];
 }

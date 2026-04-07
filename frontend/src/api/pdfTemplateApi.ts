@@ -32,6 +32,9 @@ export const updatePdfTemplate = (id: number, data: PdfTemplateUpdate) =>
 export const resetPdfTemplate = (id: number) =>
   client.post<PdfTemplate>(`/pdf-templates/${id}/reset`).then((r) => r.data);
 
+export const reorderPdfTemplates = (orders: { id: number; sort_order: number }[]) =>
+  client.put("/pdf-templates/reorder", { orders }).then((r) => r.data);
+
 // ── Preview (via export-service) ────────────────────────────────────────────
 
 export interface PreviewRequest {
@@ -39,6 +42,7 @@ export interface PreviewRequest {
   section?: string;
   content?: string;
   css?: string;
+  section_order?: string[];
 }
 
 export async function previewPdfTemplate(req: PreviewRequest): Promise<string> {

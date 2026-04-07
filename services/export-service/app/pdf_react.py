@@ -38,6 +38,7 @@ async def render_react_to_html(
     data: dict,
     templates: dict[str, str] | None = None,
     global_css: str = "",
+    section_order: list[str] | None = None,
 ) -> str:
     """Call Node.js subprocess to render React templates to HTML."""
     payload = json.dumps({
@@ -45,6 +46,7 @@ async def render_react_to_html(
         "data": data,
         "templates": templates or {},
         "globalCss": global_css,
+        "sectionOrder": section_order or [],
     })
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, _render_sync, payload)
@@ -55,6 +57,7 @@ async def render_preview(
     section: str | None = None,
     content: str | None = None,
     css: str | None = None,
+    section_order: list[str] | None = None,
 ) -> str:
     """Render a preview using mock data. Returns HTML string."""
     data = _get_mock_data()
@@ -63,6 +66,7 @@ async def render_preview(
         data=data,
         templates={section: content} if section and content else {},
         global_css=css or "",
+        section_order=section_order,
     )
 
 

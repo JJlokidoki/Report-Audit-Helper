@@ -26,20 +26,23 @@ async function main() {
     chunks.push(chunk as Buffer);
   }
   const input: RenderInput = JSON.parse(Buffer.concat(chunks).toString());
-  const { data, globalCss } = input;
+  const { data, globalCss, sectionOrder } = input;
+
+  const DEFAULT_ORDER = ["title", "toc", "general_info", "test_results", "vulnerability", "threat_classification", "checklist"];
+  const order = sectionOrder?.length ? sectionOrder.filter(s => s !== "styles") : DEFAULT_ORDER;
 
   // Pass 1: collect headings
   const headings: Heading[] = [];
   renderToString(
     createElement(HeadingCollector, {
       headings,
-      children: createElement(Sections, { data }),
+      children: createElement(Sections, { data, sectionOrder: order }),
     })
   );
 
   // Pass 2: render full document with TOC
   const body = renderToString(
-    createElement(ReportDocument, { data, headings })
+    createElement(ReportDocument, { data, headings, sectionOrder: order })
   );
 
   const html = `<!DOCTYPE html>

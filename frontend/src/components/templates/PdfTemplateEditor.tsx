@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import Editor from "@monaco-editor/react";
+import Editor, { type Monaco } from "@monaco-editor/react";
 import toast from "react-hot-toast";
 import {
   getPdfTemplates,
@@ -233,7 +233,35 @@ export default function PdfTemplateEditor() {
     setIsDirty(false);
   };
 
-  const editorLanguage = activeSection === "styles" ? "css" : "typescriptreact";
+  const editorLanguage = activeSection === "styles" ? "css" : "html";
+
+  const handleEditorMount = (_editor: unknown, monaco: Monaco) => {
+    monaco.editor.defineTheme("pah-dark", {
+      base: "vs-dark",
+      inherit: true,
+      rules: [
+        { token: "tag", foreground: "56d4cf" },
+        { token: "attribute.name", foreground: "c4a6f5" },
+        { token: "attribute.value", foreground: "e5c07b" },
+        { token: "delimiter", foreground: "6b7280" },
+        { token: "comment", foreground: "5c6370", fontStyle: "italic" },
+        { token: "string", foreground: "e5c07b" },
+        { token: "keyword", foreground: "c678dd" },
+        { token: "number", foreground: "d19a66" },
+      ],
+      colors: {
+        "editor.background": "#1a1d2e",
+        "editor.foreground": "#c8ccd4",
+        "editor.lineHighlightBackground": "#1f2335",
+        "editor.selectionBackground": "#3d4f6f80",
+        "editorLineNumber.foreground": "#4b5263",
+        "editorLineNumber.activeForeground": "#737a8c",
+        "editorCursor.foreground": "#56d4cf",
+        "editor.inactiveSelectionBackground": "#2c3347",
+      },
+    });
+    if (theme === "dark") monaco.editor.setTheme("pah-dark");
+  };
 
   return (
     <div className="flex flex-col gap-0" style={{ height: "calc(100vh - 6rem)" }}>
@@ -313,9 +341,10 @@ export default function PdfTemplateEditor() {
               <div className="flex-1 min-h-0">
                 <Editor
                   language={editorLanguage}
-                  theme={theme === "dark" ? "vs-dark" : "light"}
+                  theme={theme === "dark" ? "pah-dark" : "light"}
                   value={editorContent}
                   onChange={handleEditorChange}
+                  onMount={handleEditorMount}
                   options={{
                     minimap: { enabled: false },
                     fontSize: 13,

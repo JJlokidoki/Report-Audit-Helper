@@ -234,7 +234,10 @@ function Checklist({ data }: { data: ReportData }) {
 
 // ── Section registry ─────────────────────────────────────────────────────────
 
-const SECTION_COMPONENTS: Record<string, React.FC<{ data: ReportData; headings?: Heading[] }>> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type SectionComponentMap = Record<string, React.FC<any>>;
+
+export const SECTION_COMPONENTS: SectionComponentMap = {
   title: ({ data }) => <TitlePage data={data} />,
   toc: ({ headings }) => <TOC headings={headings ?? []} />,
   general_info: ({ data }) => <GeneralInfo data={data} />,
@@ -246,7 +249,7 @@ const SECTION_COMPONENTS: Record<string, React.FC<{ data: ReportData; headings?:
 
 // ── Section anchors ──────────────────────────────────────────────────────────
 
-const SECTION_ANCHORS: Record<string, string> = {
+export const SECTION_ANCHORS: Record<string, string> = {
   title: "title-page",
   toc: "toc",
   general_info: "general-info",
@@ -258,12 +261,17 @@ const SECTION_ANCHORS: Record<string, string> = {
 
 // ── Sections (used in pass 1 — heading collection, no title/toc) ────────────
 
-export function Sections({ data, sectionOrder }: { data: ReportData; sectionOrder: string[] }) {
+export function Sections({ data, sectionOrder, components }: {
+  data: ReportData;
+  sectionOrder: string[];
+  components?: SectionComponentMap;
+}) {
+  const map = components ?? SECTION_COMPONENTS;
   const contentSections = sectionOrder.filter(s => s !== "title" && s !== "toc");
   return (
     <>
       {contentSections.map((section) => {
-        const Component = SECTION_COMPONENTS[section];
+        const Component = map[section];
         return Component ? <Component key={section} data={data} /> : null;
       })}
     </>
@@ -272,27 +280,26 @@ export function Sections({ data, sectionOrder }: { data: ReportData; sectionOrde
 
 // ── Root document (pass 2) ──────────────────────────────────────────────────
 
-export function ReportDocument({
-  data,
-  headings,
-  sectionOrder,
-}: {
+export function ReportDocument({ data, headings, sectionOrder, components }: {
   data: ReportData;
   headings: Heading[];
   sectionOrder: string[];
+  components?: SectionComponentMap;
 }) {
+  const map = components ?? SECTION_COMPONENTS;
   return (
     <>
       {sectionOrder.map((section) => {
         const anchor = SECTION_ANCHORS[section];
         if (section === "toc") {
+          const TocComp = map["toc"];
           return (
             <div key={section} className="page-break" id={anchor}>
-              <TOC headings={headings} />
+              {TocComp ? <TocComp headings={headings} /> : <TOC headings={headings} />}
             </div>
           );
         }
-        const Component = SECTION_COMPONENTS[section];
+        const Component = map[section];
         if (!Component) return null;
         return (
           <div key={section} className="page-break" id={anchor}>

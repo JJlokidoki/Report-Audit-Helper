@@ -1,5 +1,4 @@
 import logging
-import platform
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, UploadFile
@@ -9,7 +8,6 @@ from fastapi.responses import StreamingResponse
 from app.log import setup_logging
 from app.config import settings
 from app.generator import generate_report
-from app.pdf import docx_to_pdf
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +30,9 @@ app.add_middleware(
 )
 
 
+# ── Export endpoints ─────────────────────────────────────────────────────────
+
+
 @app.get("/api/export/config")
 async def export_config():
     return {"engine": settings.export_engine}
@@ -41,6 +42,7 @@ async def export_config():
 async def export_word(report_id: int):
     if settings.export_engine == "pdf":
         raise HTTPException(501, "DOCX export not enabled (EXPORT_ENGINE=pdf)")
+
     logger.info("Export requested: report_id=%d", report_id)
     try:
         buf = await generate_report(report_id)
@@ -65,39 +67,8 @@ async def export_pdf(report_id: int):
 
     logger.info("PDF export requested: report_id=%d", report_id)
     try:
-        from app.pdf_react import render_react_to_html, html_to_pdf
-        import httpx
-
-        async with httpx.AsyncClient(timeout=30, trust_env=False) as client:
-            report = (await client.get(f"{settings.report_service_url}/api/reports/{report_id}")).json()
-            system_info = (await client.get(f"{settings.report_service_url}/api/reports/{report_id}/system-info")).json()
-            summary = (await client.get(f"{settings.report_service_url}/api/reports/{report_id}/test-summary")).json()
-            checklist = (await client.get(f"{settings.report_service_url}/api/reports/{report_id}/checklist")).json()
-
-            report_type = report.get("report_type", "web")
-            resp = await client.get(
-                f"{settings.report_service_url}/api/pdf-templates",
-                params={"report_type": report_type},
-            )
-            pdf_templates = resp.json() if resp.status_code == 200 else []
-
-        global_css = next(
-            (t["content"] for t in pdf_templates if t.get("section") == "styles"),
-            "",
-        )
-        # Section order from DB (sorted by sort_order)
-        section_order = [t["section"] for t in pdf_templates if t.get("section") != "styles"]
-
-        data = {
-            "report": report,
-            "systemInfo": system_info,
-            "summary": summary,
-            "checklist": checklist,
-        }
-
-        html = await render_react_to_html(report_type, data, global_css=global_css, section_order=section_order)
-        pdf_buf = await html_to_pdf(html)
-
+        from app.pdf_react import generate_pdf
+        pdf_buf = await generate_pdf(report_id)
     except FileNotFoundError as e:
         logger.warning("Templates not found: %s", e)
         raise HTTPException(404, str(e))
@@ -115,7 +86,7 @@ async def export_pdf(report_id: int):
     )
 
 
-# ── Template management ───────────────────────────────────────────────────────
+# ── DOCX template management ────────────────────────────────────────────────
 
 REPORT_TYPES = ["web", "ios", "android", "ai", "iot"]
 
@@ -139,7 +110,6 @@ def _validate_template_params(report_type: str, filename: str) -> None:
 
 @app.get("/api/templates")
 async def list_templates():
-    """List all template files grouped by report type."""
     result = {}
     for rt in REPORT_TYPES:
         d = settings.template_dir / rt
@@ -176,21 +146,27 @@ async def upload_template(report_type: str, filename: str, file: UploadFile):
     return {"status": "ok", "report_type": report_type, "filename": filename}
 
 
-# ── PDF template preview ─────────────────────────────────────────────────────
+# ── PDF template preview ────────────────────────────────────────────────────
+
+
+def _parse_preview_body(body: dict) -> dict:
+    return {
+        "report_type": body.get("report_type", "web"),
+        "section": body.get("section"),
+        "content": body.get("content"),
+        "css": body.get("css"),
+        "section_order": body.get("section_order"),
+    }
+
 
 @app.post("/api/pdf-templates/preview")
 async def preview_pdf_template(body: dict):
-    """Render a PDF template section with mock data, return HTML."""
+    """Render PDF template with mock data → HTML."""
     from app.pdf_react import render_preview
 
-    report_type = body.get("report_type", "web")
-    section = body.get("section")
-    content = body.get("content")
-    css = body.get("css")
-    section_order = body.get("section_order")
-
+    params = _parse_preview_body(body)
     try:
-        html = await render_preview(report_type, section, content, css, section_order)
+        html = await render_preview(**params)
         return {"html": html}
     except Exception as e:
         logger.exception("Preview render failed")
@@ -199,22 +175,14 @@ async def preview_pdf_template(body: dict):
 
 @app.post("/api/pdf-templates/preview-pdf")
 async def preview_pdf_template_as_pdf(body: dict):
-    """Render a PDF template section with mock data, return PDF binary."""
+    """Render PDF template with mock data → PDF binary."""
     from app.pdf_react import render_preview, html_to_pdf
 
-    report_type = body.get("report_type", "web")
-    section = body.get("section")
-    content = body.get("content")
-    css = body.get("css")
-    section_order = body.get("section_order")
-
+    params = _parse_preview_body(body)
     try:
-        html = await render_preview(report_type, section, content, css, section_order)
+        html = await render_preview(**params)
         pdf_buf = await html_to_pdf(html)
-        return StreamingResponse(
-            pdf_buf,
-            media_type="application/pdf",
-        )
+        return StreamingResponse(pdf_buf, media_type="application/pdf")
     except Exception as e:
         logger.exception("PDF preview render failed")
         raise HTTPException(500, f"PDF preview failed: {e}")

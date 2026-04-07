@@ -16,6 +16,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Editor, { type Monaco } from "@monaco-editor/react";
+import { registerSnippets } from "./monacoTypes";
 import toast from "react-hot-toast";
 import {
   getPdfTemplates,
@@ -56,6 +57,56 @@ const SECTION_ANCHORS: Record<string, string> = {
   checklist: "checklist",
   styles: "",
 };
+
+type VarGroup = { group: string };
+type VarEntry = { v: string; d: string; t: string };
+const VAR_REFERENCE: (VarGroup | VarEntry)[] = [
+  { group: "Отчёт" },
+  { v: "data.report.name", d: "Название отчёта", t: "string" },
+  { v: "data.report.report_type", d: "Тип (web, ios, android, ai, iot)", t: "string" },
+  { v: "data.report.id", d: "ID отчёта", t: "number" },
+  { group: "Системная информация" },
+  { v: "data.systemInfo.asName", d: "Название АС", t: "string | null" },
+  { v: "data.systemInfo.keId", d: "КЕ идентификатор", t: "string | null" },
+  { v: "data.systemInfo.url", d: "URL тестового стенда", t: "string | null" },
+  { v: "data.systemInfo.dateStart", d: "Дата начала", t: "string | null" },
+  { v: "data.systemInfo.dateEnd", d: "Дата окончания", t: "string | null" },
+  { v: "data.systemInfo.segment", d: "Сегмент сети", t: "string | null" },
+  { v: "data.systemInfo.description", d: "Описание (HTML)", t: "string | null" },
+  { v: "data.systemInfo.goal", d: "Цель тестирования", t: "string | null" },
+  { v: "data.systemInfo.qualificationLevel", d: "Уровень квалификации", t: "string | null" },
+  { v: "data.systemInfo.accessLevel", d: "Уровень доступа", t: "string | null" },
+  { v: "data.systemInfo.knowledgeLevel", d: "Уровень осведомлённости", t: "string | null" },
+  { v: "data.systemInfo.testConditions", d: "Условия тестирования", t: "string | null" },
+  { v: "data.systemInfo.executors", d: "Исполнители", t: "{ name }[]" },
+  { v: "data.systemInfo.software", d: "Используемое ПО", t: "{ name, description }[]" },
+  { group: "Уязвимости" },
+  { v: "data.summary.counts.critical", d: "Кол-во критических", t: "number" },
+  { v: "data.summary.counts.high", d: "Кол-во высоких", t: "number" },
+  { v: "data.summary.counts.medium", d: "Кол-во средних", t: "number" },
+  { v: "data.summary.counts.low", d: "Кол-во низких", t: "number" },
+  { v: "data.summary.counts.info", d: "Кол-во информационных", t: "number" },
+  { v: "data.summary.vulnerabilities", d: "Массив уязвимостей", t: "Vulnerability[]" },
+  { group: "Уязвимость (шаблон vulnerability)" },
+  { v: "vuln.bug_name", d: "Название", t: "string" },
+  { v: "vuln.bug_criticality", d: "Критичность", t: "string" },
+  { v: "vuln.bug_description", d: "Описание (HTML)", t: "string | null" },
+  { v: "vuln.cvss_score", d: "CVSS Score", t: "number | null" },
+  { v: "vuln.cvss_vector", d: "CVSS Vector", t: "string | null" },
+  { v: "vuln.reproduction_steps", d: "Шаги воспроизведения (HTML)", t: "string | null" },
+  { v: "vuln.remediation", d: "Рекомендации (HTML)", t: "string | null" },
+  { v: "vuln.automation_level", d: "Уровень автоматизации", t: "string" },
+  { v: "index", d: "Порядковый номер уязвимости (с 0)", t: "number" },
+  { group: "Чеклист" },
+  { v: "data.checklist", d: "Массив проверок", t: "SecurityCheck[]" },
+  { v: "check.check_id", d: "ID проверки", t: "string" },
+  { v: "check.category", d: "Категория", t: "string" },
+  { v: "check.name", d: "Название", t: "string" },
+  { v: "check.status", d: "Статус (passed, failed, not_tested)", t: "string" },
+  { v: "check.notes", d: "Заметки", t: "string | null" },
+  { group: "Служебные" },
+  { v: "headings", d: "Массив заголовков для оглавления", t: "{ id, title, level }[]" },
+];
 
 const PAGE_BREAK_STYLES = `
   <style>
@@ -134,6 +185,7 @@ export default function PdfTemplateEditor() {
   const htmlIframeRef = useRef<HTMLIFrameElement>(null);
   const pdfIframeRef = useRef<HTMLIFrameElement>(null);
   const previewRenderedRef = useRef(false);
+  const editorRef = useRef<Parameters<NonNullable<Parameters<typeof Editor>[0]["onMount"]>>[0] | null>(null);
 
   const { data: templates, isLoading } = useQuery({
     queryKey: ["pdf-templates", activeType],
@@ -315,7 +367,21 @@ export default function PdfTemplateEditor() {
 
   const editorLanguage = activeSection === "styles" ? "css" : "html";
 
-  const handleEditorMount = (_editor: unknown, monaco: Monaco) => {
+  const insertAtCursor = (text: string) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const selection = editor.getSelection();
+    if (!selection) return;
+    editor.executeEdits("variable-ref", [{
+      range: selection,
+      text,
+      forceMoveMarkers: true,
+    }]);
+    editor.focus();
+  };
+
+  const handleEditorMount = (editor: Parameters<NonNullable<Parameters<typeof Editor>[0]["onMount"]>>[0], monaco: Monaco) => {
+    editorRef.current = editor;
     monaco.editor.defineTheme("pah-dark", {
       base: "vs-dark",
       inherit: true,
@@ -341,6 +407,8 @@ export default function PdfTemplateEditor() {
       },
     });
     if (theme === "dark") monaco.editor.setTheme("pah-dark");
+
+    registerSnippets(monaco);
   };
 
   return (
@@ -363,6 +431,37 @@ export default function PdfTemplateEditor() {
           );
         })}
       </div>
+
+      {/* Variable reference */}
+      <details className="mb-2 shrink-0">
+        <summary className="label-section cursor-pointer select-none py-1 hover:text-base-content/50 transition-colors">
+          Справочник переменных ‹клик для вставки›
+        </summary>
+        <div className="overflow-x-auto border border-base-300 bg-base-200/30 mt-1 max-h-64 overflow-y-auto">
+          <table className="table table-xs w-full">
+            <thead>
+              <tr>
+                <th className="label-section">Переменная</th>
+                <th className="label-section">Описание</th>
+                <th className="label-section">Тип</th>
+              </tr>
+            </thead>
+            <tbody className="text-xs">
+              {VAR_REFERENCE.map((item, i) =>
+                "group" in item ? (
+                  <tr key={i}><td colSpan={3} className="label-section pt-3">{item.group}</td></tr>
+                ) : (
+                  <tr key={i} className="cursor-pointer hover:bg-primary/5" onClick={() => insertAtCursor(`{${item.v}}`)}>
+                    <td className="font-mono text-primary/70 hover:text-primary">{item.v}</td>
+                    <td>{item.d}</td>
+                    <td className="font-mono text-base-content/40">{item.t}</td>
+                  </tr>
+                ),
+              )}
+            </tbody>
+          </table>
+        </div>
+      </details>
 
       {isLoading ? (
         <div className="flex items-center justify-center flex-1">

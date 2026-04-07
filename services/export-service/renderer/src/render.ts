@@ -3,22 +3,33 @@
  *
  * Protocol: JSON on stdin → HTML on stdout.
  *
- * Input: { reportType, data, templates, globalCss }
+ * Input: { reportType, data, templates, globalCss, sectionOrder }
  *   - templates: Record<section, tsx_code> from DB
  *   - globalCss: the "styles" section content
  *   - data: ReportData object
+ *   - sectionOrder: ordered section names
  *
- * For now, templates from DB are NOT dynamically compiled (would need Babel/SWC).
- * Instead, we use the built-in default components and ignore DB templates.
- * DB template editing will be supported via a future Babel runtime compiler.
+ * Templates from DB are compiled at runtime via sucrase (TSX → JS → Function).
+ * If a section has no DB template, the built-in default component is used.
  *
  * Output: Full HTML document string.
  */
 
+import React from "react";
 import { renderToString } from "react-dom/server";
-import { createElement } from "react";
-import type { RenderInput, ReportData, Heading } from "./types.js";
-import { ReportDocument, Sections, HeadingCollector } from "./components/ReportDocument.js";
+import type { RenderInput, Heading } from "./types.js";
+import {
+  ReportDocument,
+  Sections,
+  HeadingCollector,
+  SECTION_COMPONENTS,
+} from "./components/ReportDocument.js";
+import { compileTemplate } from "./compile.js";
+
+const DEFAULT_ORDER = [
+  "title", "toc", "general_info", "test_results",
+  "vulnerability", "threat_classification", "checklist",
+];
 
 async function main() {
   const chunks: Buffer[] = [];
@@ -26,23 +37,45 @@ async function main() {
     chunks.push(chunk as Buffer);
   }
   const input: RenderInput = JSON.parse(Buffer.concat(chunks).toString());
-  const { data, globalCss, sectionOrder } = input;
+  const { data, globalCss, sectionOrder, templates } = input;
 
-  const DEFAULT_ORDER = ["title", "toc", "general_info", "test_results", "vulnerability", "threat_classification", "checklist"];
-  const order = sectionOrder?.length ? sectionOrder.filter(s => s !== "styles") : DEFAULT_ORDER;
+  const order = sectionOrder?.length
+    ? sectionOrder.filter((s) => s !== "styles")
+    : DEFAULT_ORDER;
+
+  // Override section components with DB templates (if provided)
+  const overrides: Record<string, React.FC<Record<string, unknown>>> = {};
+  if (templates) {
+    for (const [section, tsxCode] of Object.entries(templates)) {
+      if (section === "styles" || !tsxCode) continue;
+      overrides[section] = compileTemplate(tsxCode);
+    }
+  }
+
+  // Merge: DB overrides take priority over built-in components
+  const mergedComponents = { ...SECTION_COMPONENTS, ...overrides };
 
   // Pass 1: collect headings
   const headings: Heading[] = [];
   renderToString(
-    createElement(HeadingCollector, {
+    React.createElement(HeadingCollector, {
       headings,
-      children: createElement(Sections, { data, sectionOrder: order }),
+      children: React.createElement(Sections, {
+        data,
+        sectionOrder: order,
+        components: mergedComponents,
+      }),
     })
   );
 
-  // Pass 2: render full document with TOC
+  // Pass 2: render full document with TOC (using merged components)
   const body = renderToString(
-    createElement(ReportDocument, { data, headings, sectionOrder: order })
+    React.createElement(ReportDocument, {
+      data,
+      headings,
+      sectionOrder: order,
+      components: mergedComponents,
+    })
   );
 
   const html = `<!DOCTYPE html>

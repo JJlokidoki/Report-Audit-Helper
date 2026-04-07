@@ -15,6 +15,7 @@ services:
     build: services/export-service
     environment:
       - REPORT_SERVICE_URL=http://report-service:8001
+      - EXPORT_ENGINE=${EXPORT_ENGINE:-pdf}
     depends_on:
       report-service:
         condition: service_healthy

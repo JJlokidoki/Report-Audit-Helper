@@ -32,8 +32,15 @@ app.add_middleware(
 )
 
 
+@app.get("/api/export/config")
+async def export_config():
+    return {"engine": settings.export_engine}
+
+
 @app.get("/api/export/{report_id}/word")
 async def export_word(report_id: int):
+    if settings.export_engine == "pdf":
+        raise HTTPException(501, "DOCX export not enabled (EXPORT_ENGINE=pdf)")
     logger.info("Export requested: report_id=%d", report_id)
     try:
         buf = await generate_report(report_id)
@@ -53,21 +60,47 @@ async def export_word(report_id: int):
 
 @app.get("/api/export/{report_id}/pdf")
 async def export_pdf(report_id: int):
-    if platform.system() == "Windows":
-        raise HTTPException(
-            501,
-            "PDF-генерация реализована только в Linux-окружении с LibreOffice",
-        )
+    if settings.export_engine == "docx":
+        raise HTTPException(501, "PDF export not enabled (EXPORT_ENGINE=docx)")
 
     logger.info("PDF export requested: report_id=%d", report_id)
     try:
-        docx_buf = await generate_report(report_id)
-        pdf_buf = await docx_to_pdf(docx_buf)
+        from app.pdf_react import render_react_to_html, html_to_pdf
+        import httpx
+
+        async with httpx.AsyncClient(timeout=30, trust_env=False) as client:
+            report = (await client.get(f"{settings.report_service_url}/api/reports/{report_id}")).json()
+            system_info = (await client.get(f"{settings.report_service_url}/api/reports/{report_id}/system-info")).json()
+            summary = (await client.get(f"{settings.report_service_url}/api/reports/{report_id}/test-summary")).json()
+            checklist = (await client.get(f"{settings.report_service_url}/api/reports/{report_id}/checklist")).json()
+
+            report_type = report.get("report_type", "web")
+            resp = await client.get(
+                f"{settings.report_service_url}/api/pdf-templates",
+                params={"report_type": report_type},
+            )
+            pdf_templates = resp.json() if resp.status_code == 200 else []
+
+        global_css = next(
+            (t["content"] for t in pdf_templates if t.get("section") == "styles"),
+            "",
+        )
+
+        data = {
+            "report": report,
+            "systemInfo": system_info,
+            "summary": summary,
+            "checklist": checklist,
+        }
+
+        html = await render_react_to_html(report_type, data, global_css=global_css)
+        pdf_buf = await html_to_pdf(html)
+
     except FileNotFoundError as e:
         logger.warning("Templates not found: %s", e)
         raise HTTPException(404, str(e))
     except RuntimeError as e:
-        logger.error("PDF conversion failed: %s", e)
+        logger.error("PDF render failed: %s", e)
         raise HTTPException(500, str(e))
     except Exception as e:
         logger.exception("PDF export failed: report_id=%d", report_id)
@@ -139,3 +172,45 @@ async def upload_template(report_type: str, filename: str, file: UploadFile):
     (d / filename).write_bytes(content)
     logger.info("Template uploaded: %s/%s (%d bytes)", report_type, filename, len(content))
     return {"status": "ok", "report_type": report_type, "filename": filename}
+
+
+# ── PDF template preview ─────────────────────────────────────────────────────
+
+@app.post("/api/pdf-templates/preview")
+async def preview_pdf_template(body: dict):
+    """Render a PDF template section with mock data, return HTML."""
+    from app.pdf_react import render_preview
+
+    report_type = body.get("report_type", "web")
+    section = body.get("section")
+    content = body.get("content")
+    css = body.get("css")
+
+    try:
+        html = await render_preview(report_type, section, content, css)
+        return {"html": html}
+    except Exception as e:
+        logger.exception("Preview render failed")
+        raise HTTPException(500, f"Preview failed: {e}")
+
+
+@app.post("/api/pdf-templates/preview-pdf")
+async def preview_pdf_template_as_pdf(body: dict):
+    """Render a PDF template section with mock data, return PDF binary."""
+    from app.pdf_react import render_preview, html_to_pdf
+
+    report_type = body.get("report_type", "web")
+    section = body.get("section")
+    content = body.get("content")
+    css = body.get("css")
+
+    try:
+        html = await render_preview(report_type, section, content, css)
+        pdf_buf = await html_to_pdf(html)
+        return StreamingResponse(
+            pdf_buf,
+            media_type="application/pdf",
+        )
+    except Exception as e:
+        logger.exception("PDF preview render failed")
+        raise HTTPException(500, f"PDF preview failed: {e}")

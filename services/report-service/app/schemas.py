@@ -225,3 +225,21 @@ class SoftwareIds(BaseModel):
 
 
 SystemInfoResponse.model_rebuild()
+
+
+# ── PDF Templates ──────────────────────────────────────────────────────────────
+
+class PdfTemplateUpdate(BaseModel):
+    content: str | None = None
+    css: str | None = None
+
+
+class PdfTemplateResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    report_type: str
+    section: str
+    content: str
+    css: str | None
+    updated_at: datetime

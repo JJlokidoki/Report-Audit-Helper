@@ -2,8 +2,10 @@ import { useState, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { getTemplates, downloadTemplate, uploadTemplate, type TemplateFile } from "../api/templateApi";
+import { getExportConfig, type ExportEngine } from "../api/exportApi";
 import PageHeader from "../components/common/PageHeader";
 import EmptyState from "../components/common/EmptyState";
+import PdfTemplateEditor from "../components/templates/PdfTemplateEditor";
 
 const TYPE_LABELS: Record<string, string> = {
   web: "WEB",
@@ -16,7 +18,21 @@ const TYPES = Object.keys(TYPE_LABELS);
 
 export default function TemplatesPage() {
   const qc = useQueryClient();
-  const { data, isLoading, isError } = useQuery({ queryKey: ["templates"], queryFn: getTemplates });
+  const { data: engineConfig } = useQuery({
+    queryKey: ["export-config"],
+    queryFn: getExportConfig,
+    staleTime: Infinity,
+  });
+  const engine: ExportEngine = engineConfig?.engine ?? "docx";
+  const [engineTab, setEngineTab] = useState<"docx" | "pdf">("docx");
+
+  const activeEngine = engine === "both" ? engineTab : engine;
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["templates"],
+    queryFn: getTemplates,
+    enabled: activeEngine === "docx",
+  });
   const [activeTab, setActiveTab] = useState("web");
   const [uploading, setUploading] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -52,6 +68,21 @@ export default function TemplatesPage() {
     }
   };
 
+  if (activeEngine === "pdf") {
+    return (
+      <div>
+        <PageHeader title="Шаблоны отчётов" className="mb-6" />
+        {engine === "both" && (
+          <div role="tablist" className="tabs tabs-bordered mb-4">
+            <button role="tab" className={`tab font-display text-xs tracking-wider ${engineTab === "docx" ? "tab-active" : ""}`} onClick={() => setEngineTab("docx")}>DOCX</button>
+            <button role="tab" className={`tab font-display text-xs tracking-wider ${engineTab === "pdf" ? "tab-active" : ""}`} onClick={() => setEngineTab("pdf")}>PDF</button>
+          </div>
+        )}
+        <PdfTemplateEditor />
+      </div>
+    );
+  }
+
   if (isLoading) return <div className="text-sm text-base-content/40">Загрузка...</div>;
   if (isError) return <div className="text-sm text-error">Export-сервис недоступен</div>;
 
@@ -60,6 +91,12 @@ export default function TemplatesPage() {
   return (
     <div className="max-w-4xl">
       <PageHeader title="Шаблоны отчётов" className="mb-6" />
+      {engine === "both" && (
+        <div role="tablist" className="tabs tabs-bordered mb-4">
+          <button role="tab" className={`tab font-display text-xs tracking-wider ${engineTab === "docx" ? "tab-active" : ""}`} onClick={() => setEngineTab("docx")}>DOCX</button>
+          <button role="tab" className={`tab font-display text-xs tracking-wider ${engineTab === "pdf" ? "tab-active" : ""}`} onClick={() => setEngineTab("pdf")}>PDF</button>
+        </div>
+      )}
 
       {/* Tabs */}
       <div role="tablist" className="tabs tabs-bordered mb-4">

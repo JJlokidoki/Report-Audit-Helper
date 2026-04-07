@@ -12,6 +12,7 @@ from sqlalchemy import (
     String,
     Table,
     Text,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -221,3 +222,15 @@ class RetestResult(Base):
 
     test_run: Mapped["TestRun"] = relationship("TestRun", back_populates="retest_results")
     vulnerability: Mapped["Vulnerability"] = relationship("Vulnerability", back_populates="retest_results")
+
+
+class PdfTemplate(Base):
+    __tablename__ = "pdf_template"
+    __table_args__ = (UniqueConstraint("report_type", "section"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    report_type: Mapped[str] = mapped_column(String(50))
+    section: Mapped[str] = mapped_column(String(50))
+    content: Mapped[str] = mapped_column(Text, default="")
+    css: Mapped[str | None] = mapped_column(Text, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())

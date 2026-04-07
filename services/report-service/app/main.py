@@ -11,7 +11,8 @@ from app.database import engine, init_db
 from app.log import setup_logging
 from app.preset_software import seed_preset_software
 from app.preset_vulnerabilities import seed_preset_vulnerabilities
-from app.routers import reports, system_info, vulnerabilities, checklist, executors, software, vulnerability_templates
+from app.pdf_template_defaults import seed_pdf_templates
+from app.routers import reports, system_info, vulnerabilities, checklist, executors, software, vulnerability_templates, pdf_templates
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,7 @@ async def lifespan(app: FastAPI):
     async with AsyncSession(engine) as db:
         await seed_preset_software(db)
         await seed_preset_vulnerabilities(db)
+        await seed_pdf_templates(db)
     yield
 
 
@@ -67,3 +69,4 @@ app.include_router(checklist.router)
 app.include_router(executors.router)
 app.include_router(software.router)
 app.include_router(vulnerability_templates.router)
+app.include_router(pdf_templates.router)

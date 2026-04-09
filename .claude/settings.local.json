@@ -53,7 +53,9 @@
       "WebFetch(domain:api.github.com)",
       "Bash(wc -l \"D:\\\\projects\\\\sysreptor\\\\api\\\\src\\\\sysreptor\\\\pentests\\\\rendering\\\\global_assets\"/*)",
       "Bash(curl -s http://localhost:8001/api/pdf-templates?report_type=web)",
-      "Bash(curl -s -X POST http://localhost:8001/api/pdf-templates/8/reset)"
+      "Bash(curl -s -X POST http://localhost:8001/api/pdf-templates/8/reset)",
+      "Bash(curl -sL \"https://raw.githubusercontent.com/CourtBouillon/weasyprint-samples/main/report/report.css\")",
+      "Bash(bin/weasyprint.exe renderer/mock/report-preview.html renderer/mock/report-preview.pdf)"
     ]
   }
 }

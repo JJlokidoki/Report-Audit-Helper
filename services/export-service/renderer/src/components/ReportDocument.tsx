@@ -1,33 +1,7 @@
-import React, { createContext, useContext } from "react";
+import React from "react";
 import type { ReportData, Heading } from "../types.js";
 
-// ── Heading collection context ──────────────────────────────────────────────
-
-const HeadingContext = createContext<Heading[] | null>(null);
-
-export function HeadingCollector({
-  headings,
-  children,
-}: {
-  headings: Heading[];
-  children: React.ReactNode;
-}) {
-  return (
-    <HeadingContext.Provider value={headings}>
-      {children}
-    </HeadingContext.Provider>
-  );
-}
-
-/** Use in section components to register a heading for TOC */
-export function useHeading(id: string, title: string, level: number) {
-  const headings = useContext(HeadingContext);
-  if (headings) {
-    headings.push({ id, title, level });
-  }
-}
-
-// ── Section components ──────────────────────────────────────────────────────
+// ── Section components (built-in fallbacks, overridden by DB templates) ────
 
 function TitlePage({ data }: { data: ReportData }) {
   const r = data.report;
@@ -60,12 +34,13 @@ function TOC({ headings }: { headings: Heading[] }) {
   );
 }
 
-function GeneralInfo({ data }: { data: ReportData }) {
+function GeneralInfo({ data, chapterNum }: { data: ReportData; chapterNum?: number }) {
+  const n = chapterNum ?? 1;
   const si = data.systemInfo;
   return (
     <section>
       <h2 className="in-toc" id="general-info">
-        1. Общая информация
+        {n} Executive Summary
       </h2>
       <table>
         <tbody>
@@ -99,7 +74,8 @@ function GeneralInfo({ data }: { data: ReportData }) {
   );
 }
 
-function TestResults({ data }: { data: ReportData }) {
+function TestResults({ data, chapterNum }: { data: ReportData; chapterNum?: number }) {
+  const n = chapterNum ?? 2;
   const c = data.summary.counts;
   const levels = [
     { label: "Критичный", count: c.critical },
@@ -112,7 +88,7 @@ function TestResults({ data }: { data: ReportData }) {
   return (
     <section>
       <h2 className="in-toc" id="test-results">
-        2. Результаты тестирования
+        {n} Scope {"&"} Methodology
       </h2>
       <table>
         <thead>
@@ -128,19 +104,20 @@ function TestResults({ data }: { data: ReportData }) {
   );
 }
 
-function VulnerabilitySection({ data }: { data: ReportData }) {
+function VulnerabilitySection({ data, chapterNum }: { data: ReportData; chapterNum?: number }) {
+  const n = chapterNum ?? 3;
   const vulns = data.summary.vulnerabilities;
   if (!vulns.length) return null;
 
   return (
     <section>
       <h2 className="in-toc" id="vulnerabilities">
-        3. Описание результатов тестирования
+        {n} Proof of Concept
       </h2>
       {vulns.map((v, i) => (
         <div key={v.id} className="vulnerability">
           <h3 className="in-toc" id={`vuln-${i + 1}`}>
-            3.{i + 1}. {v.bug_name}
+            {n}.{i + 1} {v.bug_name}
           </h3>
           <table>
             <tbody>
@@ -177,11 +154,12 @@ function VulnerabilitySection({ data }: { data: ReportData }) {
   );
 }
 
-function ThreatClassification() {
+function ThreatClassification({ chapterNum }: { chapterNum?: number }) {
+  const n = chapterNum ?? 4;
   return (
     <section>
       <h2 className="in-toc" id="threat-class">
-        4. Классификация уровня угрозы
+        {n} Классификация уровня угрозы
       </h2>
       <table>
         <thead>
@@ -198,7 +176,8 @@ function ThreatClassification() {
   );
 }
 
-function Checklist({ data }: { data: ReportData }) {
+function Checklist({ data, chapterNum }: { data: ReportData; chapterNum?: number }) {
+  const n = chapterNum ?? 5;
   const checks = data.checklist;
   if (!checks.length) return null;
 
@@ -211,7 +190,7 @@ function Checklist({ data }: { data: ReportData }) {
   return (
     <section className="checklist-section">
       <h2 className="in-toc" id="checklist">
-        5. Чеклист
+        {n} Appendices
       </h2>
       <table>
         <thead>
@@ -240,11 +219,11 @@ export type SectionComponentMap = Record<string, React.FC<any>>;
 export const SECTION_COMPONENTS: SectionComponentMap = {
   title: ({ data }) => <TitlePage data={data} />,
   toc: ({ headings }) => <TOC headings={headings ?? []} />,
-  general_info: ({ data }) => <GeneralInfo data={data} />,
-  test_results: ({ data }) => <TestResults data={data} />,
-  vulnerability: ({ data }) => <VulnerabilitySection data={data} />,
-  threat_classification: () => <ThreatClassification />,
-  checklist: ({ data }) => <Checklist data={data} />,
+  general_info: ({ data, chapterNum }) => <GeneralInfo data={data} chapterNum={chapterNum} />,
+  test_results: ({ data, chapterNum }) => <TestResults data={data} chapterNum={chapterNum} />,
+  vulnerability: ({ data, chapterNum }) => <VulnerabilitySection data={data} chapterNum={chapterNum} />,
+  threat_classification: ({ chapterNum }) => <ThreatClassification chapterNum={chapterNum} />,
+  checklist: ({ data, chapterNum }) => <Checklist data={data} chapterNum={chapterNum} />,
 };
 
 // ── Section anchors ──────────────────────────────────────────────────────────
@@ -261,18 +240,32 @@ export const SECTION_ANCHORS: Record<string, string> = {
 
 // ── Sections (used in pass 1 — heading collection, no title/toc) ────────────
 
+const NON_NUMBERED = new Set(["title", "toc", "styles"]);
+
+function getChapterNumbers(order: string[]): Record<string, number> {
+  const result: Record<string, number> = {};
+  let num = 1;
+  for (const s of order) {
+    if (!NON_NUMBERED.has(s)) {
+      result[s] = num++;
+    }
+  }
+  return result;
+}
+
 export function Sections({ data, sectionOrder, components }: {
   data: ReportData;
   sectionOrder: string[];
   components?: SectionComponentMap;
 }) {
   const map = components ?? SECTION_COMPONENTS;
-  const contentSections = sectionOrder.filter(s => s !== "title" && s !== "toc");
+  const chapters = getChapterNumbers(sectionOrder);
+  const contentSections = sectionOrder.filter(s => !NON_NUMBERED.has(s));
   return (
     <>
       {contentSections.map((section) => {
         const Component = map[section];
-        return Component ? <Component key={section} data={data} /> : null;
+        return Component ? <Component key={section} data={data} chapterNum={chapters[section]} /> : null;
       })}
     </>
   );
@@ -287,6 +280,7 @@ export function ReportDocument({ data, headings, sectionOrder, components }: {
   components?: SectionComponentMap;
 }) {
   const map = components ?? SECTION_COMPONENTS;
+  const chapters = getChapterNumbers(sectionOrder);
   return (
     <>
       {sectionOrder.map((section) => {
@@ -303,7 +297,7 @@ export function ReportDocument({ data, headings, sectionOrder, components }: {
         if (!Component) return null;
         return (
           <div key={section} className="page-break" id={anchor}>
-            <Component data={data} headings={headings} />
+            <Component data={data} headings={headings} chapterNum={chapters[section]} />
           </div>
         );
       })}

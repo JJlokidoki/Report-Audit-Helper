@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models import PdfTemplate
 from app.schemas import PdfTemplateUpdate, PdfTemplateReorder, PdfTemplateResponse
-from app.pdf_template_defaults import _DEFAULT_CONTENT, SECTIONS
+from app.pdf_template_defaults import _get_defaults, SECTIONS
 
 router = APIRouter(prefix="/api/pdf-templates", tags=["pdf-templates"])
 
@@ -66,7 +66,7 @@ async def reset_pdf_template(template_id: int, db: AsyncSession = Depends(get_db
     tpl = result.scalar_one_or_none()
     if not tpl:
         raise HTTPException(404, "Template not found")
-    tpl.content = _DEFAULT_CONTENT.get(tpl.section, "")
+    tpl.content = _get_defaults(tpl.report_type).get(tpl.section, "")
     tpl.css = None
     await db.commit()
     await db.refresh(tpl)

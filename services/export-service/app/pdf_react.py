@@ -14,9 +14,11 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-RENDERER_SCRIPT = Path(__file__).parent.parent / "renderer" / "dist" / "render.js"
-MOCK_DATA_PATH = Path(__file__).parent.parent / "renderer" / "mock" / "data.json"
-WEASYPRINT_EXE = Path(__file__).parent.parent / "bin" / "weasyprint.exe"
+_SERVICE_ROOT = Path(__file__).parent.parent
+RENDERER_SCRIPT = _SERVICE_ROOT / "renderer" / "dist" / "render.js"
+MOCK_DATA_PATH = _SERVICE_ROOT / "renderer" / "mock" / "data.json"
+WEASYPRINT_EXE = _SERVICE_ROOT / "bin" / "weasyprint.exe"
+PDF_ASSETS_DIR = _SERVICE_ROOT / "renderer" / "pdf-assets"
 
 
 # ── Data fetching ────────────────────────────────────────────────────────────
@@ -116,9 +118,10 @@ async def render_to_html(
 
 def _html_to_pdf_sync(html: str) -> bytes:
     """Convert HTML to PDF synchronously (called from executor)."""
+    base_url = PDF_ASSETS_DIR.as_uri() + "/"
     if platform.system() == "Windows" and WEASYPRINT_EXE.exists():
         result = subprocess.run(
-            [str(WEASYPRINT_EXE), "-", "-"],
+            [str(WEASYPRINT_EXE), "-u", base_url, "-", "-"],
             input=html.encode("utf-8"),
             capture_output=True,
             timeout=60,
@@ -128,7 +131,7 @@ def _html_to_pdf_sync(html: str) -> bytes:
         return result.stdout
     else:
         import weasyprint
-        return weasyprint.HTML(string=html).write_pdf()
+        return weasyprint.HTML(string=html, base_url=base_url).write_pdf()
 
 
 async def html_to_pdf(html: str) -> BytesIO:
@@ -166,12 +169,29 @@ async def render_preview(
     css: str | None = None,
     section_order: list[str] | None = None,
 ) -> str:
-    """Render preview with mock data. Returns HTML string."""
+    """Render preview with mock data. Returns HTML string.
+
+    If css/section_order are not provided, fetches them from DB templates.
+    """
     data = get_mock_data()
+
+    # Load full template config from DB if not provided
+    pdf_templates = await fetch_pdf_templates(report_type)
+    db_css, db_order, db_templates = extract_template_config(pdf_templates)
+
+    # Override: use provided css/section_order if given, otherwise DB values
+    final_css = css if css is not None else db_css
+    final_order = section_order if section_order else db_order
+
+    # If editing a specific section, override that section's template
+    templates = dict(db_templates)
+    if section and content is not None:
+        templates[section] = content
+
     return await render_to_html(
         report_type=report_type,
         data=data,
-        templates={section: content} if section and content else {},
-        global_css=css or "",
-        section_order=section_order,
+        templates=templates,
+        global_css=final_css,
+        section_order=final_order,
     )

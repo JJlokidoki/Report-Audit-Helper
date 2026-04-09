@@ -1,9 +1,11 @@
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.log import setup_logging
 from app.config import settings
@@ -28,6 +30,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Static assets for PDF templates (fonts, images)
+_PDF_ASSETS = Path(__file__).parent.parent / "renderer" / "pdf-assets"
+if _PDF_ASSETS.is_dir():
+    app.mount("/api/pdf-assets", StaticFiles(directory=str(_PDF_ASSETS)), name="pdf-assets")
 
 
 # ── Export endpoints ─────────────────────────────────────────────────────────
@@ -167,6 +174,8 @@ async def preview_pdf_template(body: dict):
     params = _parse_preview_body(body)
     try:
         html = await render_preview(**params)
+        # Inject base href so relative font/image URLs resolve to static assets
+        html = html.replace("<head>", '<head><base href="/api/pdf-assets/">', 1)
         return {"html": html}
     except Exception as e:
         logger.exception("Preview render failed")

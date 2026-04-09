@@ -88,6 +88,89 @@ argument-hint: "preview|edit|add-section|show-structure [аргументы]"
 - **Блок-пример** (`.example-block`): фон `#fef3ee`, border-left `3px solid #e8956a`
 - **Скриншот** (`.screenshot`): centered, `max-width: 100%`, border `1px solid gray-300`, подпись снизу (`.screenshot-caption`: italic, 9pt, centered)
 
+### Справочник классов и идентификаторов
+
+#### Контейнеры страниц
+
+| Класс / ID | Тег | Назначение | CSS page |
+|---|---|---|---|
+| `.title-page` | `div` | Титульная страница | `title-page` |
+| `.toc.section` | `div` | Оглавление | auto (portrait) |
+| `.section` | `div` | Обычная секция (portrait) | auto |
+| `.checklist-section` | `div` | Секция с landscape-ориентацией | `landscape` |
+| `.section-portrait` | `div` | Возврат к portrait после landscape | auto |
+| `#general-info` | `div.section` | Секция Executive Summary |
+| `#scope` | `div.section` | Секция Scope & Methodology |
+| `#vulnerabilities` | `div.section` | Секция Proof of Concept |
+| `#appendices` | `div.checklist-section` | Секция Appendices (landscape) |
+| `#appendix-software` | `div.section-portrait` | Подсекции после чек-листа |
+
+#### Титульная страница
+
+| Класс | Тег | Назначение |
+|---|---|---|
+| `.title-content` | `div` | Flex-контейнер содержимого (z-index: 1) |
+| `.title-middle` | `div` | Блок с названиями (центрирован flex: 1 сверху и снизу) |
+| `.title-company` | `h1` | Название компании (30pt, ExtraBold 800, uppercase, white) |
+| `.title-report-type` | `p` | Тип отчёта (20pt, Light 300, `#8fa4b8`, center) |
+| `.title-target` | `p` | Название объекта (18pt, Bold 700, white, center, border-top) |
+| `.title-bottom-table` | `table` | Таблица 2x2 внизу (дата + исполнитель) |
+
+#### Оглавление
+
+| Класс | Тег | Назначение |
+|---|---|---|
+| `.toc-table` | `table` | Таблица оглавления (без границ) |
+| `.toc-l1` | `tr` | Строка уровня 1 (bold, 10.5pt) |
+| `.toc-l2` | `tr` | Строка уровня 2 (normal, 10pt, padding-left 2em) |
+| `.toc-num` | `td` | Номер пункта (width 2.2em, left-align) |
+| `.toc-name` | `td` | Название пункта (содержит `<a href="#id">`) |
+| `.toc-pg` | `td` | Номер страницы (width 2.5em, right-align) |
+
+#### Таблицы
+
+| Класс | Тег | Назначение |
+|---|---|---|
+| `.kv-table` | `table` | Key-value таблица с границами (`1px solid gray-800`) |
+| `.kv-table th` | `th` | Заголовок kv-таблицы (без фона, bold, border) |
+| `.kv-table td` | `td` | Ячейка kv-таблицы (td:first-child width 28%) |
+| `.checklist-table` | `table` | Таблица чек-листа (без внешних границ, 9pt) |
+| `.checklist-title-row` | `tr` | Строка-заголовок внутри таблицы (без границ) |
+| `.checklist-group-header` | `tr` | Заголовок группы (centered, bold, серый фон, border-top) |
+| `.table-caption` | `p` | Подпись таблицы (text-align right, bold, 10pt) |
+
+#### Fake-заголовки (внутри таблиц)
+
+| Класс | Тег | Назначение |
+|---|---|---|
+| `.fake-h2` | `span` | Имитация h2 внутри `<td>` (16pt, bold, `#0f4761`, border-bottom 2px) |
+| `.fake-h3` | `span` | Имитация h3 внутри `<td>` (14pt, semi-bold 600, `#0f4761`) |
+
+#### Контент уязвимостей
+
+| Класс / ID | Тег | Назначение |
+|---|---|---|
+| `#vuln-1`, `#vuln-N` | `h3` | Якорь конкретной уязвимости |
+| `.example-block` | `div` | Блок-пример (фон `#fef3ee`, border-left оранжевый) |
+| `.example-block p` | `p` | Текст внутри блока-примера |
+| `.screenshot` | `div` | Контейнер скриншота (centered, break-inside avoid) |
+| `.screenshot img` | `img` | Изображение (max-width 100%, border `1px solid gray-300`) |
+| `.screenshot-caption` | `div` | Подпись под скриншотом (italic, 9pt, centered) |
+
+#### Якоря для навигации из TOC
+
+| ID | Элемент | Секция |
+|---|---|---|
+| `#general-info` | `div.section` | 1 Executive Summary |
+| `#test-results` | `h3` | 1.2 Результаты тестирования |
+| `#scope` | `div.section` | 2 Scope & Methodology |
+| `#vulnerabilities` | `div.section` | 3 Proof of Concept |
+| `#vuln-1` | `h3` | 3.1 Конкретная уязвимость |
+| `#appendices` | `div.checklist-section` | 4 Appendices |
+| `#checklist` | `td` | 4.1 Чек-лист (внутри fake-заголовка) |
+| `#appendix-software` | `div.section-portrait` | 4.2 Используемое ПО |
+| `#threat-class` | `h3` | 4.3 Классификация уровней |
+
 ## Команды
 
 Аргументы пользователя: `$ARGUMENTS`

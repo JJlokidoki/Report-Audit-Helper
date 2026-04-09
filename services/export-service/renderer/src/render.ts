@@ -21,14 +21,13 @@ import type { RenderInput, Heading } from "./types.js";
 import {
   ReportDocument,
   Sections,
-  HeadingCollector,
   SECTION_COMPONENTS,
 } from "./components/ReportDocument.js";
 import { compileTemplate } from "./compile.js";
 
 const DEFAULT_ORDER = [
   "title", "toc", "general_info", "test_results",
-  "vulnerability", "threat_classification", "checklist",
+  "vulnerability", "checklist", "threat_classification",
 ];
 
 async function main() {
@@ -55,20 +54,29 @@ async function main() {
   // Merge: DB overrides take priority over built-in components
   const mergedComponents = { ...SECTION_COMPONENTS, ...overrides };
 
-  // Pass 1: collect headings
-  const headings: Heading[] = [];
-  renderToString(
-    React.createElement(HeadingCollector, {
-      headings,
-      children: React.createElement(Sections, {
-        data,
-        sectionOrder: order,
-        components: mergedComponents,
-      }),
+  // Pass 1: render sections to collect headings from HTML
+  const sectionsHtml = renderToString(
+    React.createElement(Sections, {
+      data,
+      sectionOrder: order,
+      components: mergedComponents,
     })
   );
 
-  // Pass 2: render full document with TOC (using merged components)
+  // Extract headings from rendered HTML (h2/h3 with id attributes)
+  const headings: Heading[] = [];
+  const headingRe = /<h([23])[^>]*\bid="([^"]+)"[^>]*>(.*?)<\/h[23]>/gi;
+  let match;
+  while ((match = headingRe.exec(sectionsHtml)) !== null) {
+    const level = parseInt(match[1], 10);
+    const id = match[2];
+    const title = match[3].replace(/<[^>]+>/g, "").trim();
+    if (id && title) {
+      headings.push({ id, title, level });
+    }
+  }
+
+  // Pass 2: render full document with TOC
   const body = renderToString(
     React.createElement(ReportDocument, {
       data,

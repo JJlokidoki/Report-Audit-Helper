@@ -6,14 +6,46 @@ export interface PdfTemplate {
   id: number;
   report_type: string;
   section: string;
+  label: string;
+  anchor: string;
   content: string;
   css: string | null;
+  sort_order: number;
+  is_system: boolean;
+  is_numbered: boolean;
+  is_builtin: boolean;
   updated_at: string;
 }
 
 export interface PdfTemplateUpdate {
   content?: string;
   css?: string;
+  label?: string;
+  anchor?: string;
+  is_numbered?: boolean;
+}
+
+export interface PdfTemplateCreate {
+  report_type: string;
+  label: string;
+  section?: string;
+  anchor?: string;
+  content?: string;
+  is_numbered?: boolean;
+}
+
+export interface PdfTemplateVersion {
+  id: number;
+  template_id: number;
+  content: string;
+  created_at: string;
+}
+
+export interface SectionMeta {
+  section: string;
+  anchor: string;
+  isNumbered: boolean;
+  hasBuiltin: boolean;
 }
 
 // ── CRUD (via report-service) ───────────────────────────────────────────────
@@ -35,6 +67,20 @@ export const resetPdfTemplate = (id: number) =>
 export const reorderPdfTemplates = (orders: { id: number; sort_order: number }[]) =>
   client.put("/pdf-templates/reorder", { orders }).then((r) => r.data);
 
+export const createPdfTemplateSection = (data: PdfTemplateCreate) =>
+  client.post<PdfTemplate>("/pdf-templates", data).then((r) => r.data);
+
+export const deletePdfTemplateSection = (id: number) =>
+  client.delete(`/pdf-templates/${id}`).then((r) => r.data);
+
+export const getPdfTemplateVersions = (id: number) =>
+  client.get<PdfTemplateVersion[]>(`/pdf-templates/${id}/versions`).then((r) => r.data);
+
+export const restorePdfTemplateVersion = (templateId: number, versionId: number) =>
+  client
+    .post<PdfTemplate>(`/pdf-templates/${templateId}/versions/${versionId}/restore`)
+    .then((r) => r.data);
+
 // ── Preview (via export-service) ────────────────────────────────────────────
 
 export interface PreviewRequest {
@@ -42,7 +88,7 @@ export interface PreviewRequest {
   section?: string;
   content?: string;
   css?: string;
-  section_order?: string[];
+  sections?: SectionMeta[];
 }
 
 export async function previewPdfTemplate(req: PreviewRequest): Promise<string> {

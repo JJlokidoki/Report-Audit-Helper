@@ -1,5 +1,7 @@
 """Default TSX templates for PDF export, seeded into DB on first startup."""
 
+from dataclasses import dataclass
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,6 +19,15 @@ SECTIONS = [
     "threat_classification",
     "styles",
 ]
+
+
+@dataclass(frozen=True)
+class SectionDefault:
+    section: str
+    label: str
+    anchor: str
+    is_system: bool
+    is_numbered: bool
 
 # Default templates for all report types (based on report-preview.html)
 _DEFAULT_CONTENT: dict[str, str] = {
@@ -817,29 +828,69 @@ tbody tr:last-child td {
 }
 
 
+DEFAULT_SECTIONS: list[SectionDefault] = [
+    SectionDefault("title",                 "Титульная страница",   "title-page",      True,  False),
+    SectionDefault("toc",                   "Оглавление",           "toc",             True,  False),
+    SectionDefault("general_info",          "Общая информация",     "general-info",    False, True),
+    SectionDefault("test_results",          "Результаты тестирования", "test-results", False, True),
+    SectionDefault("vulnerability",         "Уязвимости",           "vulnerabilities", False, True),
+    SectionDefault("checklist",             "Чеклист",              "checklist",       False, True),
+    SectionDefault("threat_classification", "Классификация угроз",  "threat-class",    False, True),
+    SectionDefault("styles",                "CSS стили",            "",                True,  False),
+]
+
+_BY_SLUG: dict[str, SectionDefault] = {d.section: d for d in DEFAULT_SECTIONS}
+
+
 def _get_defaults(_report_type: str) -> dict[str, str]:
     """Return default content dict for a given report type."""
     return _DEFAULT_CONTENT
 
 
 async def seed_pdf_templates(db: AsyncSession) -> None:
-    """Create default PDF templates for report types that have none."""
-    result = await db.execute(select(PdfTemplate))
-    existing = {(t.report_type, t.section) for t in result.scalars().all()}
+    """Create default PDF templates and backfill metadata for existing rows.
 
-    added = 0
+    - Inserts missing rows for new report_types at first startup.
+    - Backfills label/anchor/is_system/is_numbered/is_builtin on existing rows.
+    - Never overwrites user-edited content or css.
+    """
+    result = await db.execute(select(PdfTemplate))
+    rows = {(t.report_type, t.section): t for t in result.scalars().all()}
+
+    changed = False
     for rt in REPORT_TYPES:
         defaults = _get_defaults(rt)
-        for order, section in enumerate(SECTIONS):
-            if (rt, section) not in existing:
+        for order, d in enumerate(DEFAULT_SECTIONS):
+            key = (rt, d.section)
+            if key in rows:
+                # Backfill metadata on existing row (never touch content)
+                row = rows[key]
+                if not row.label:
+                    row.label = d.label
+                    changed = True
+                if not row.anchor:
+                    row.anchor = d.anchor
+                    changed = True
+                if row.is_system != d.is_system:
+                    row.is_system = d.is_system
+                    changed = True
+                if not row.is_builtin:
+                    row.is_builtin = True
+                    changed = True
+            else:
                 db.add(PdfTemplate(
                     report_type=rt,
-                    section=section,
-                    content=defaults.get(section, ""),
+                    section=d.section,
+                    label=d.label,
+                    anchor=d.anchor,
+                    content=defaults.get(d.section, ""),
                     css=None,
                     sort_order=order,
+                    is_system=d.is_system,
+                    is_numbered=d.is_numbered,
+                    is_builtin=True,
                 ))
-                added += 1
+                changed = True
 
-    if added:
+    if changed:
         await db.commit()

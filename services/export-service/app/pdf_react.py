@@ -51,24 +51,32 @@ async def fetch_pdf_templates(report_type: str) -> list[dict]:
         return resp.json() if resp.status_code == 200 else []
 
 
-def extract_template_config(pdf_templates: list[dict]) -> tuple[str, list[str], dict[str, str]]:
-    """Extract CSS, section order, and template content from DB templates.
+def extract_template_payload(pdf_templates: list[dict]) -> tuple[str, list[dict], dict[str, str]]:
+    """Extract CSS, section metadata, and template content from DB templates.
 
-    Returns: (global_css, section_order, db_templates)
+    Returns: (global_css, sections, db_templates)
+      - sections: list of {section, anchor, isNumbered, hasBuiltin} dicts
     """
     global_css = next(
         (t["content"] for t in pdf_templates if t.get("section") == "styles"),
         "",
     )
-    section_order = [
-        t["section"] for t in pdf_templates if t.get("section") != "styles"
+    sections = [
+        {
+            "section": t["section"],
+            "anchor": t.get("anchor") or t["section"].replace("_", "-"),
+            "isNumbered": t.get("is_numbered", True),
+            "hasBuiltin": t.get("is_builtin", False),
+        }
+        for t in pdf_templates
+        if t.get("section") != "styles"
     ]
     db_templates = {
         t["section"]: t["content"]
         for t in pdf_templates
         if t.get("section") != "styles" and t.get("content")
     }
-    return global_css, section_order, db_templates
+    return global_css, sections, db_templates
 
 
 def get_mock_data() -> dict:
@@ -99,7 +107,7 @@ async def render_to_html(
     data: dict,
     templates: dict[str, str] | None = None,
     global_css: str = "",
-    section_order: list[str] | None = None,
+    sections: list[dict] | None = None,
 ) -> str:
     """Render React templates to HTML via Node.js subprocess."""
     payload = json.dumps({
@@ -107,7 +115,7 @@ async def render_to_html(
         "data": data,
         "templates": templates or {},
         "globalCss": global_css,
-        "sectionOrder": section_order or [],
+        "sections": sections or [],
     })
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, _render_sync, payload)
@@ -151,13 +159,13 @@ async def generate_pdf(report_id: int) -> BytesIO:
     data = await fetch_report_data(report_id)
     report_type = data["report"].get("report_type", "web")
     pdf_templates = await fetch_pdf_templates(report_type)
-    global_css, section_order, db_templates = extract_template_config(pdf_templates)
+    global_css, sections, db_templates = extract_template_payload(pdf_templates)
 
     html = await render_to_html(
         report_type, data,
         templates=db_templates,
         global_css=global_css,
-        section_order=section_order,
+        sections=sections,
     )
     return await html_to_pdf(html)
 
@@ -167,21 +175,21 @@ async def render_preview(
     section: str | None = None,
     content: str | None = None,
     css: str | None = None,
-    section_order: list[str] | None = None,
+    sections: list[dict] | None = None,
 ) -> str:
     """Render preview with mock data. Returns HTML string.
 
-    If css/section_order are not provided, fetches them from DB templates.
+    If css/sections are not provided, fetches them from DB templates.
     """
     data = get_mock_data()
 
-    # Load full template config from DB if not provided
+    # Load full template config from DB
     pdf_templates = await fetch_pdf_templates(report_type)
-    db_css, db_order, db_templates = extract_template_config(pdf_templates)
+    db_css, db_sections, db_templates = extract_template_payload(pdf_templates)
 
-    # Override: use provided css/section_order if given, otherwise DB values
+    # Override: use provided css/sections if given, otherwise DB values
     final_css = css if css is not None else db_css
-    final_order = section_order if section_order else db_order
+    final_sections = sections if sections else db_sections
 
     # If editing a specific section, override that section's template
     templates = dict(db_templates)
@@ -193,5 +201,5 @@ async def render_preview(
         data=data,
         templates=templates,
         global_css=final_css,
-        section_order=final_order,
+        sections=final_sections,
     )

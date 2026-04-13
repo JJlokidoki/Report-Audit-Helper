@@ -229,9 +229,21 @@ SystemInfoResponse.model_rebuild()
 
 # ── PDF Templates ──────────────────────────────────────────────────────────────
 
+class PdfTemplateCreate(BaseModel):
+    report_type: str
+    label: str
+    section: str | None = None   # slug; auto-generated from label if omitted
+    anchor: str | None = None    # auto-generated from slug if omitted
+    content: str = ""
+    is_numbered: bool = True
+
+
 class PdfTemplateUpdate(BaseModel):
     content: str | None = None
     css: str | None = None
+    label: str | None = None
+    anchor: str | None = None
+    is_numbered: bool | None = None
 
 
 class PdfTemplateReorder(BaseModel):
@@ -244,7 +256,21 @@ class PdfTemplateResponse(BaseModel):
     id: int
     report_type: str
     section: str
+    label: str
+    anchor: str
     content: str
     css: str | None
     sort_order: int
+    is_system: bool
+    is_numbered: bool
+    is_builtin: bool
     updated_at: datetime
+
+
+class PdfTemplateVersionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    template_id: int
+    content: str
+    created_at: datetime

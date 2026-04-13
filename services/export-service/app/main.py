@@ -162,7 +162,7 @@ def _parse_preview_body(body: dict) -> dict:
         "section": body.get("section"),
         "content": body.get("content"),
         "css": body.get("css"),
-        "section_order": body.get("section_order"),
+        "sections": body.get("sections"),
     }
 
 

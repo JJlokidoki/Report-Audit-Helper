@@ -59,10 +59,18 @@ export interface Heading {
   level: number;
 }
 
+export interface SectionMeta {
+  section: string;      // slug — key into templates
+  anchor: string;       // HTML id for the wrapper div
+  isNumbered: boolean;  // include in chapter numbering
+  hasBuiltin: boolean;  // has a built-in React fallback component
+}
+
 export interface RenderInput {
   reportType: string;
   data: ReportData;
   templates: Record<string, string>;
   globalCss: string;
-  sectionOrder: string[];
+  sections?: SectionMeta[];     // preferred
+  sectionOrder?: string[];      // legacy — synthesized to sections if provided
 }

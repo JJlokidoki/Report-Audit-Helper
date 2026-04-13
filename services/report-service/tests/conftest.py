@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 
 from app.database import Base, get_db
 from app.main import app
+from app.pdf_template_defaults import seed_pdf_templates
 
 engine_test = create_async_engine("sqlite+aiosqlite://", echo=False)
 async_session_test = async_sessionmaker(engine_test, class_=AsyncSession, expire_on_commit=False)
@@ -22,6 +23,8 @@ app.dependency_overrides[get_db] = override_get_db
 async def setup_db():
     async with engine_test.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    async with async_session_test() as session:
+        await seed_pdf_templates(session)
     yield
     async with engine_test.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)

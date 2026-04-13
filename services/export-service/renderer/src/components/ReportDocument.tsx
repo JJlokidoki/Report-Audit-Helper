@@ -1,5 +1,5 @@
 import React from "react";
-import type { ReportData, Heading } from "../types.js";
+import type { ReportData, Heading, SectionMeta } from "../types.js";
 
 // ── Section components (built-in fallbacks, overridden by DB templates) ────
 
@@ -226,46 +226,43 @@ export const SECTION_COMPONENTS: SectionComponentMap = {
   checklist: ({ data, chapterNum }) => <Checklist data={data} chapterNum={chapterNum} />,
 };
 
-// ── Section anchors ──────────────────────────────────────────────────────────
+// ── Chapter numbering ───────────────────────────────────────────────────────
 
-export const SECTION_ANCHORS: Record<string, string> = {
-  title: "title-page",
-  toc: "toc",
-  general_info: "general-info",
-  test_results: "test-results",
-  vulnerability: "vulnerabilities",
-  threat_classification: "threat-class",
-  checklist: "checklist",
-};
-
-// ── Sections (used in pass 1 — heading collection, no title/toc) ────────────
-
-const NON_NUMBERED = new Set(["title", "toc", "styles"]);
-
-function getChapterNumbers(order: string[]): Record<string, number> {
+function getChapterNumbers(sections: SectionMeta[]): Record<string, number> {
   const result: Record<string, number> = {};
   let num = 1;
-  for (const s of order) {
-    if (!NON_NUMBERED.has(s)) {
-      result[s] = num++;
+  for (const s of sections) {
+    if (s.isNumbered) {
+      result[s.section] = num++;
     }
   }
   return result;
 }
 
-export function Sections({ data, sectionOrder, components }: {
+// ── Sections (used in pass 1 — heading collection, excludes title/toc) ─────
+
+export function Sections({ data, sections, components }: {
   data: ReportData;
-  sectionOrder: string[];
+  sections: SectionMeta[];
   components?: SectionComponentMap;
 }) {
   const map = components ?? SECTION_COMPONENTS;
-  const chapters = getChapterNumbers(sectionOrder);
-  const contentSections = sectionOrder.filter(s => !NON_NUMBERED.has(s));
+  const chapters = getChapterNumbers(sections);
+  const contentSections = sections.filter(
+    (s) => s.section !== "title" && s.section !== "toc"
+  );
   return (
     <>
-      {contentSections.map((section) => {
-        const Component = map[section];
-        return Component ? <Component key={section} data={data} chapterNum={chapters[section]} /> : null;
+      {contentSections.map((meta) => {
+        const Component = map[meta.section];
+        if (!Component) return null;
+        return (
+          <Component
+            key={meta.section}
+            data={data}
+            chapterNum={chapters[meta.section]}
+          />
+        );
       })}
     </>
   );
@@ -273,18 +270,18 @@ export function Sections({ data, sectionOrder, components }: {
 
 // ── Root document (pass 2) ──────────────────────────────────────────────────
 
-export function ReportDocument({ data, headings, sectionOrder, components }: {
+export function ReportDocument({ data, headings, sections, components }: {
   data: ReportData;
   headings: Heading[];
-  sectionOrder: string[];
+  sections: SectionMeta[];
   components?: SectionComponentMap;
 }) {
   const map = components ?? SECTION_COMPONENTS;
-  const chapters = getChapterNumbers(sectionOrder);
+  const chapters = getChapterNumbers(sections);
   return (
     <>
-      {sectionOrder.map((section) => {
-        const anchor = SECTION_ANCHORS[section];
+      {sections.map((meta) => {
+        const { section, anchor } = meta;
         if (section === "toc") {
           const TocComp = map["toc"];
           return (

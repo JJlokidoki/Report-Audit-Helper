@@ -101,12 +101,15 @@ export default function CVSSCalculatorModal({ open, onClose, onApply, initialVec
         </div>
 
         {/* Iframe */}
-        <iframe
-          ref={iframeRef}
-          src={iframeSrc}
-          className="flex-1 w-full border-0"
-          title="CVSS Calculator"
-        />
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <iframe
+            ref={iframeRef}
+            src={iframeSrc}
+            className="w-full border-0"
+            style={{ height: "150%" }}
+            title="CVSS Calculator"
+          />
+        </div>
       </div>
       <div className="modal-backdrop" onClick={onClose} />
     </dialog>,

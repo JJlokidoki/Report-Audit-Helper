@@ -57,7 +57,7 @@ const columns = [
 export default function TestSummaryPage() {
   const { id } = useParams<{ id: string }>();
   const reportId = id ? parseInt(id, 10) : NaN;
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>([{ id: "bug_criticality", desc: false }]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["test-summary", reportId],

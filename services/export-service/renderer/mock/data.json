@@ -1,0 +1,105 @@
+{
+  "report": {
+    "id": 1,
+    "name": "Демо-отчёт по веб-аудиту",
+    "report_type": "web"
+  },
+  "systemInfo": {
+    "asName": "Веб-портал ООО «Демо»",
+    "keId": "KE-2024-001",
+    "url": "https://demo.example.com",
+    "dateStart": "2024-03-01",
+    "dateEnd": "2024-03-15",
+    "segment": "DMZ",
+    "description": "Тестирование на проникновение веб-приложения",
+    "goal": "Выявление уязвимостей в веб-приложении",
+    "qualificationLevel": "Средний",
+    "accessLevel": "Без привилегий",
+    "knowledgeLevel": "Black Box",
+    "testConditions": "Тестирование проводилось из внешней сети",
+    "executors": [
+      { "name": "Иванов И.И." },
+      { "name": "Петров П.П." }
+    ],
+    "software": [
+      { "name": "Burp Suite Professional", "description": "Прокси-перехватчик и сканер веб-уязвимостей" },
+      { "name": "Nmap", "description": "Сканер портов и сервисов" },
+      { "name": "SQLMap", "description": "Автоматизированный инструмент для SQL-инъекций" }
+    ]
+  },
+  "summary": {
+    "counts": {
+      "critical": 1,
+      "high": 2,
+      "medium": 1,
+      "low": 1,
+      "info": 0
+    },
+    "vulnerabilities": [
+      {
+        "id": 1,
+        "bug_name": "SQL-инъекция в форме авторизации",
+        "bug_criticality": "critical",
+        "bug_description": "<p>Параметр <code>username</code> в форме авторизации передаётся в SQL-запрос без экранирования, что позволяет выполнить произвольные SQL-команды.</p>",
+        "cvss_score": 9.8,
+        "cvss_vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+        "reproduction_steps": "<ol><li>Открыть страницу авторизации</li><li>В поле username ввести: <code>' OR 1=1--</code></li><li>Убедиться в успешной авторизации</li></ol>",
+        "remediation": "<p>1. Использовать параметризованные запросы (prepared statements).<br>2. Внедрить WAF-правила для блокировки SQL-инъекций.</p>",
+        "automation_level": "fully"
+      },
+      {
+        "id": 2,
+        "bug_name": "Cross-Site Scripting (XSS) в поиске",
+        "bug_criticality": "high",
+        "bug_description": "<p>Отражённый XSS в параметре <code>q</code> поисковой строки. Пользовательский ввод не экранируется при выводе на страницу результатов.</p>",
+        "cvss_score": 7.1,
+        "cvss_vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:R/VC:N/VI:L/VA:N/SC:N/SI:N/SA:N",
+        "reproduction_steps": "<ol><li>Перейти на страницу поиска</li><li>Ввести: <code>&lt;script&gt;alert(1)&lt;/script&gt;</code></li><li>Убедиться в выполнении скрипта</li></ol>",
+        "remediation": "<p>Экранировать HTML-символы в выводе. Добавить заголовок Content-Security-Policy.</p>",
+        "automation_level": "partially"
+      },
+      {
+        "id": 3,
+        "bug_name": "Отсутствие ограничения количества попыток входа",
+        "bug_criticality": "high",
+        "bug_description": "<p>Форма авторизации не ограничивает количество попыток ввода пароля, что позволяет проводить атаку перебором.</p>",
+        "cvss_score": 7.5,
+        "cvss_vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:N/VA:N/SC:N/SI:N/SA:N",
+        "reproduction_steps": "<ol><li>Открыть форму авторизации</li><li>Запустить перебор паролей с помощью Hydra</li><li>Убедиться в отсутствии блокировки после 100+ попыток</li></ol>",
+        "remediation": "<p>1. Реализовать rate limiting (не более 5 попыток в минуту).<br>2. Добавить CAPTCHA после 3 неудачных попыток.</p>",
+        "automation_level": "fully"
+      },
+      {
+        "id": 4,
+        "bug_name": "Устаревшая версия jQuery",
+        "bug_criticality": "medium",
+        "bug_description": "<p>Используется jQuery версии 2.1.4, содержащая известные уязвимости (CVE-2020-11022, CVE-2020-11023).</p>",
+        "cvss_score": 5.3,
+        "cvss_vector": null,
+        "reproduction_steps": "<p>Проверить версию jQuery в исходном коде страницы.</p>",
+        "remediation": "<p>Обновить jQuery до актуальной версии 3.7+.</p>",
+        "automation_level": "no"
+      },
+      {
+        "id": 5,
+        "bug_name": "Отсутствие заголовка X-Content-Type-Options",
+        "bug_criticality": "low",
+        "bug_description": "<p>Сервер не возвращает заголовок <code>X-Content-Type-Options: nosniff</code>.</p>",
+        "cvss_score": 3.1,
+        "cvss_vector": null,
+        "reproduction_steps": "<p>Выполнить HTTP-запрос и проверить заголовки ответа.</p>",
+        "remediation": "<p>Добавить заголовок <code>X-Content-Type-Options: nosniff</code> во все ответы сервера.</p>",
+        "automation_level": "no"
+      }
+    ]
+  },
+  "checklist": [
+    { "check_id": "WSTG-INFO-01", "category": "Information Gathering", "name": "Разведка в поисковых системах", "status": "passed", "notes": null },
+    { "check_id": "WSTG-INFO-02", "category": "Information Gathering", "name": "Определение web-сервера", "status": "passed", "notes": null },
+    { "check_id": "WSTG-CONF-01", "category": "Configuration Management", "name": "Тестирование сетевой инфраструктуры", "status": "not_tested", "notes": null },
+    { "check_id": "WSTG-ATHN-01", "category": "Authentication", "name": "Тестирование учётных данных по умолчанию", "status": "passed", "notes": "Дефолтные креды отсутствуют" },
+    { "check_id": "WSTG-ATHN-03", "category": "Authentication", "name": "Тестирование механизма блокировки", "status": "not_applicable", "notes": null },
+    { "check_id": "WSTG-INPV-01", "category": "Input Validation", "name": "Тестирование XSS", "status": "passed", "notes": "Обнаружен reflected XSS" },
+    { "check_id": "WSTG-INPV-05", "category": "Input Validation", "name": "Тестирование SQL-инъекций", "status": "passed", "notes": "Обнаружена SQLi в форме авторизации" }
+  ]
+}

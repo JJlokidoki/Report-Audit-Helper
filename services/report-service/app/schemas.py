@@ -28,10 +28,12 @@ class ReportListResponse(ReportResponse):
 
 class ExecutorCreate(BaseModel):
     name: str
+    email: str | None = None
 
 
 class ExecutorUpdate(BaseModel):
     name: str | None = None
+    email: str | None = None
 
 
 class ExecutorResponse(BaseModel):
@@ -39,6 +41,7 @@ class ExecutorResponse(BaseModel):
 
     id: int
     name: str
+    email: str | None = None
 
 
 class SoftwareCreate(BaseModel):
@@ -225,3 +228,48 @@ class SoftwareIds(BaseModel):
 
 
 SystemInfoResponse.model_rebuild()
+
+
+# ── PDF Templates ──────────────────────────────────────────────────────────────
+
+class PdfTemplateCreate(BaseModel):
+    report_type: str
+    label: str
+    section: str | None = None   # slug; auto-generated from label if omitted
+    content: str = ""
+    is_numbered: bool = True
+
+
+class PdfTemplateUpdate(BaseModel):
+    content: str | None = None
+    label: str | None = None
+    is_numbered: bool | None = None
+
+
+class PdfTemplateReorder(BaseModel):
+    orders: list[dict]  # [{id: int, sort_order: int}]
+
+
+class PdfTemplateResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    report_type: str
+    section: str
+    label: str
+    anchor: str
+    content: str
+    sort_order: int
+    is_system: bool
+    is_numbered: bool
+    is_builtin: bool
+    updated_at: datetime
+
+
+class PdfTemplateVersionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    template_id: int
+    content: str
+    created_at: datetime

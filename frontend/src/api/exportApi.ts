@@ -1,9 +1,16 @@
 import axios from "axios";
 
 const exportClient = axios.create({
-  baseURL: import.meta.env.VITE_EXPORT_API_URL ?? "http://127.0.0.1:8002",
+  baseURL: import.meta.env.VITE_EXPORT_API_URL || "",
   headers: { "Content-Type": "application/json" },
 });
+
+export type ExportEngine = "docx" | "pdf" | "both";
+
+export async function getExportConfig(): Promise<{ engine: ExportEngine }> {
+  const resp = await exportClient.get("/api/export/config");
+  return resp.data;
+}
 
 export async function downloadWord(reportId: number): Promise<void> {
   const resp = await exportClient.get(`/api/export/${reportId}/word`, {

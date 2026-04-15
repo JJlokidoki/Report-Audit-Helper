@@ -8,6 +8,7 @@ python-multipart
 pydantic-settings
 beautifulsoup4
 htmldocx
+weasyprint
 pytest
 pytest-asyncio
 respx

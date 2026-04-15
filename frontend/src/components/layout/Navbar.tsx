@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { getReport, getSystemInfo } from "../../api/reportApi";
-import { downloadWord, downloadPdf, previewPdf } from "../../api/exportApi";
+import { downloadWord, downloadPdf, previewPdf, getExportConfig } from "../../api/exportApi";
 import type { ReportType, SystemInfo } from "../../types";
 import { REPORT_TYPE_STYLES } from "../../utils/labelConfig";
 import ModalShell from "../common/ModalShell";
@@ -49,6 +49,15 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   type ExportAction = "preview-pdf" | "download-pdf" | "download-word";
   const [pendingAction, setPendingAction] = useState<ExportAction | null>(null);
+
+  const { data: engineConfig } = useQuery({
+    queryKey: ["export-config"],
+    queryFn: getExportConfig,
+    staleTime: Infinity,
+  });
+  const engine = engineConfig?.engine ?? "both";
+  const showPdf = engine === "pdf" || engine === "both";
+  const showWord = engine === "docx" || engine === "both";
 
   const { data: report } = useQuery({
     queryKey: ["report", reportId],
@@ -164,21 +173,27 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
                 {exporting ? <span className="loading loading-spinner loading-xs" /> : "Экспорт \u25BE"}
               </div>
               <ul tabIndex={0} className="dropdown-content menu bg-base-200 border border-base-300 rounded-sm z-50 w-52 p-1 mt-1">
-                <li>
-                  <button onClick={() => { handleExport("preview-pdf"); (document.activeElement as HTMLElement)?.blur(); }} disabled={exporting}>
-                    Просмотр PDF
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { handleExport("download-pdf"); (document.activeElement as HTMLElement)?.blur(); }} disabled={exporting}>
-                    Экспорт PDF
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { handleExport("download-word"); (document.activeElement as HTMLElement)?.blur(); }} disabled={exporting}>
-                    Экспорт Word
-                  </button>
-                </li>
+                {showPdf && (
+                  <li>
+                    <button onClick={() => { handleExport("preview-pdf"); (document.activeElement as HTMLElement)?.blur(); }} disabled={exporting}>
+                      Просмотр PDF
+                    </button>
+                  </li>
+                )}
+                {showPdf && (
+                  <li>
+                    <button onClick={() => { handleExport("download-pdf"); (document.activeElement as HTMLElement)?.blur(); }} disabled={exporting}>
+                      Экспорт PDF
+                    </button>
+                  </li>
+                )}
+                {showWord && (
+                  <li>
+                    <button onClick={() => { handleExport("download-word"); (document.activeElement as HTMLElement)?.blur(); }} disabled={exporting}>
+                      Экспорт Word
+                    </button>
+                  </li>
+                )}
               </ul>
             </div>
           )}

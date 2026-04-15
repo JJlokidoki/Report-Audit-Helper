@@ -48,7 +48,17 @@
       "Bash(npx tsc:*)",
       "Bash(grep -r \"VulnerabilityCreate\\\\|def create_vulnerability\" /d/projects/pentest-audit-helper --include=*.py --include=*.ts --include=*.tsx)",
       "Bash(grep -r \"createVulnerability\\\\|POST.*vulnerable\" /d/projects/pentest-audit-helper/frontend --include=*.ts --include=*.tsx)",
-      "Bash(ls /d/projects/pentest-audit-helper/frontend/*.config.*)"
+      "Bash(ls /d/projects/pentest-audit-helper/frontend/*.config.*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(wc -l \"D:\\\\projects\\\\sysreptor\\\\api\\\\src\\\\sysreptor\\\\pentests\\\\rendering\\\\global_assets\"/*)",
+      "Bash(curl -s http://localhost:8001/api/pdf-templates?report_type=web)",
+      "Bash(curl -s -X POST http://localhost:8001/api/pdf-templates/8/reset)",
+      "Bash(curl -sL \"https://raw.githubusercontent.com/CourtBouillon/weasyprint-samples/main/report/report.css\")",
+      "Bash(bin/weasyprint.exe renderer/mock/report-preview.html renderer/mock/report-preview.pdf)",
+      "Bash(curl -s -X POST http://localhost:8002/api/pdf-templates/preview -H 'Content-Type: application/json' -d '{\"report_type\":\"web\"}')",
+      "Bash(curl -s \"http://localhost:8001/api/pdf-templates?report_type=web\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8001/api/reports)"
     ]
   }
 }

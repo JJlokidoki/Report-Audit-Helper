@@ -30,10 +30,11 @@ function useConfirm() {
 function ExecutorRow({ ex, onSaved, onDelete }: { ex: Executor; onSaved: () => void; onDelete: () => void }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(ex.name);
+  const [email, setEmail] = useState(ex.email ?? "");
   const qc = useQueryClient();
 
   const upd = useMutation({
-    mutationFn: () => updateExecutor(ex.id, { name }),
+    mutationFn: () => updateExecutor(ex.id, { name, email: email.trim() || null }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["executors"] }); setEditing(false); onSaved(); },
     onError: () => toast.error("Ошибка сохранения"),
   });
@@ -46,13 +47,21 @@ function ExecutorRow({ ex, onSaved, onDelete }: { ex: Executor; onSaved: () => v
             className="input input-bordered input-sm w-full"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && upd.mutate()}
             autoFocus
+          />
+        </td>
+        <td>
+          <input
+            className="input input-bordered input-sm w-full"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="email@example.com"
+            onKeyDown={(e) => e.key === "Enter" && upd.mutate()}
           />
         </td>
         <td className="text-right">
           <button className="btn btn-xs btn-primary mr-1" onClick={() => upd.mutate()} disabled={upd.isPending}>Сохранить</button>
-          <button className="btn btn-xs btn-ghost" onClick={() => { setEditing(false); setName(ex.name); }}>Отмена</button>
+          <button className="btn btn-xs btn-ghost" onClick={() => { setEditing(false); setName(ex.name); setEmail(ex.email ?? ""); }}>Отмена</button>
         </td>
       </tr>
     );
@@ -61,6 +70,7 @@ function ExecutorRow({ ex, onSaved, onDelete }: { ex: Executor; onSaved: () => v
   return (
     <tr>
       <td>{ex.name}</td>
+      <td className="text-muted">{ex.email ?? ""}</td>
       <td className="text-right">
         <button className="btn btn-xs btn-ghost mr-1" onClick={() => setEditing(true)}>Изменить</button>
         <button className="btn btn-xs btn-ghost text-error/70 hover:text-error" onClick={onDelete}>Удалить</button>
@@ -73,12 +83,13 @@ function ExecutorsSection() {
   const qc = useQueryClient();
   const confirm = useConfirm();
   const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
 
   const { data: executors = [] } = useQuery({ queryKey: ["executors"], queryFn: getExecutors });
 
   const addMut = useMutation({
-    mutationFn: () => createExecutor({ name: newName.trim() }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["executors"] }); setNewName(""); },
+    mutationFn: () => createExecutor({ name: newName.trim(), email: newEmail.trim() || null }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["executors"] }); setNewName(""); setNewEmail(""); },
     onError: () => toast.error("Ошибка"),
   });
   const delMut = useMutation({
@@ -96,7 +107,7 @@ function ExecutorsSection() {
     <div>
       <h2 className="font-semibold text-base mb-3">Исполнители</h2>
       <table className="table table-sm w-full mb-3">
-        <thead><tr><th>Имя</th><th /></tr></thead>
+        <thead><tr><th>Имя</th><th>Email</th><th /></tr></thead>
         <tbody>
           {executors.map((ex) => (
             <ExecutorRow
@@ -107,7 +118,7 @@ function ExecutorsSection() {
             />
           ))}
           {executors.length === 0 && (
-            <tr><td colSpan={2}><EmptyState message="нет исполнителей" className="py-4" /></td></tr>
+            <tr><td colSpan={3}><EmptyState message="нет исполнителей" className="py-4" /></td></tr>
           )}
         </tbody>
       </table>
@@ -117,6 +128,13 @@ function ExecutorsSection() {
           placeholder="Имя нового исполнителя"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+        />
+        <input
+          className="input input-bordered input-sm flex-1 max-w-xs"
+          placeholder="Email"
+          value={newEmail}
+          onChange={(e) => setNewEmail(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
         />
         <button className="btn btn-sm btn-primary" onClick={handleAdd} disabled={addMut.isPending}>

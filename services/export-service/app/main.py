@@ -1,15 +1,15 @@
 import logging
-import platform
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.log import setup_logging
 from app.config import settings
 from app.generator import generate_report
-from app.pdf import docx_to_pdf
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +31,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Static assets for PDF templates (fonts, images)
+_PDF_ASSETS = Path(__file__).parent.parent / "renderer" / "pdf-assets"
+if _PDF_ASSETS.is_dir():
+    app.mount("/api/pdf-assets", StaticFiles(directory=str(_PDF_ASSETS)), name="pdf-assets")
+
+
+# ── Export endpoints ─────────────────────────────────────────────────────────
+
+
+@app.get("/api/export/config")
+async def export_config():
+    return {"engine": settings.export_engine}
+
 
 @app.get("/api/export/{report_id}/word")
 async def export_word(report_id: int):
+    if settings.export_engine == "pdf":
+        raise HTTPException(501, "DOCX export not enabled (EXPORT_ENGINE=pdf)")
+
     logger.info("Export requested: report_id=%d", report_id)
     try:
         buf = await generate_report(report_id)
@@ -53,21 +69,18 @@ async def export_word(report_id: int):
 
 @app.get("/api/export/{report_id}/pdf")
 async def export_pdf(report_id: int):
-    if platform.system() == "Windows":
-        raise HTTPException(
-            501,
-            "PDF-генерация реализована только в Linux-окружении с LibreOffice",
-        )
+    if settings.export_engine == "docx":
+        raise HTTPException(501, "PDF export not enabled (EXPORT_ENGINE=docx)")
 
     logger.info("PDF export requested: report_id=%d", report_id)
     try:
-        docx_buf = await generate_report(report_id)
-        pdf_buf = await docx_to_pdf(docx_buf)
+        from app.pdf_react import generate_pdf
+        pdf_buf = await generate_pdf(report_id)
     except FileNotFoundError as e:
         logger.warning("Templates not found: %s", e)
         raise HTTPException(404, str(e))
     except RuntimeError as e:
-        logger.error("PDF conversion failed: %s", e)
+        logger.error("PDF render failed: %s", e)
         raise HTTPException(500, str(e))
     except Exception as e:
         logger.exception("PDF export failed: report_id=%d", report_id)
@@ -80,7 +93,7 @@ async def export_pdf(report_id: int):
     )
 
 
-# ── Template management ───────────────────────────────────────────────────────
+# ── DOCX template management ────────────────────────────────────────────────
 
 REPORT_TYPES = ["web", "ios", "android", "ai", "iot"]
 
@@ -104,7 +117,6 @@ def _validate_template_params(report_type: str, filename: str) -> None:
 
 @app.get("/api/templates")
 async def list_templates():
-    """List all template files grouped by report type."""
     result = {}
     for rt in REPORT_TYPES:
         d = settings.template_dir / rt
@@ -139,3 +151,47 @@ async def upload_template(report_type: str, filename: str, file: UploadFile):
     (d / filename).write_bytes(content)
     logger.info("Template uploaded: %s/%s (%d bytes)", report_type, filename, len(content))
     return {"status": "ok", "report_type": report_type, "filename": filename}
+
+
+# ── PDF template preview ────────────────────────────────────────────────────
+
+
+def _parse_preview_body(body: dict) -> dict:
+    return {
+        "report_type": body.get("report_type", "web"),
+        "section": body.get("section"),
+        "content": body.get("content"),
+        "css": body.get("css"),  # override CSS from frontend editor
+        "sections": body.get("sections"),
+    }
+
+
+@app.post("/api/pdf-templates/preview")
+async def preview_pdf_template(body: dict):
+    """Render PDF template with mock data → HTML."""
+    from app.pdf_react import render_preview
+
+    params = _parse_preview_body(body)
+    try:
+        html = await render_preview(**params)
+        # Inject base href so relative font/image URLs resolve to static assets
+        html = html.replace("<head>", '<head><base href="/api/pdf-assets/">', 1)
+        return {"html": html}
+    except Exception as e:
+        logger.exception("Preview render failed")
+        raise HTTPException(500, f"Preview failed: {e}")
+
+
+@app.post("/api/pdf-templates/preview-pdf")
+async def preview_pdf_template_as_pdf(body: dict):
+    """Render PDF template with mock data → PDF binary."""
+    from app.pdf_react import render_preview, html_to_pdf
+
+    params = _parse_preview_body(body)
+    try:
+        html = await render_preview(**params)
+        pdf_buf = await html_to_pdf(html)
+        return StreamingResponse(pdf_buf, media_type="application/pdf")
+    except Exception as e:
+        logger.exception("PDF preview render failed")
+        raise HTTPException(500, f"PDF preview failed: {e}")

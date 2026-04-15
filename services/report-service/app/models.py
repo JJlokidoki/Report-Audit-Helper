@@ -12,6 +12,7 @@ from sqlalchemy import (
     String,
     Table,
     Text,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -89,6 +90,7 @@ class Executor(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255))
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     system_infos: Mapped[list["SystemInfo"]] = relationship(
         "SystemInfo", secondary=system_info_executors, back_populates="executors"
@@ -221,3 +223,40 @@ class RetestResult(Base):
 
     test_run: Mapped["TestRun"] = relationship("TestRun", back_populates="retest_results")
     vulnerability: Mapped["Vulnerability"] = relationship("Vulnerability", back_populates="retest_results")
+
+
+class PdfTemplate(Base):
+    __tablename__ = "pdf_template"
+    __table_args__ = (UniqueConstraint("report_type", "section"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    report_type: Mapped[str] = mapped_column(String(50))
+    section: Mapped[str] = mapped_column(String(50))
+    label: Mapped[str] = mapped_column(String(255), default="", server_default="")
+    content: Mapped[str] = mapped_column(Text, default="")
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    is_system: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    is_numbered: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
+    is_builtin: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    @property
+    def anchor(self) -> str:
+        from app.pdf_template_defaults import get_anchor
+        return get_anchor(self.section)
+
+    versions: Mapped[list["PdfTemplateVersion"]] = relationship(
+        "PdfTemplateVersion", back_populates="template", cascade="all, delete-orphan",
+        order_by="desc(PdfTemplateVersion.created_at)",
+    )
+
+
+class PdfTemplateVersion(Base):
+    __tablename__ = "pdf_template_version"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    template_id: Mapped[int] = mapped_column(Integer, ForeignKey("pdf_template.id", ondelete="CASCADE"))
+    content: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    template: Mapped["PdfTemplate"] = relationship("PdfTemplate", back_populates="versions")

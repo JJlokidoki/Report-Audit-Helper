@@ -40,6 +40,7 @@ export interface SystemInfo {
 export interface Executor {
   id: number;
   name: string;
+  email: string | null;
 }
 
 export type SoftwareLabel = "web" | "mobile" | "network" | "ai" | "iot" | "general";

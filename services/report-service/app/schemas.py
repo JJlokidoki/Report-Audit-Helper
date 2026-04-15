@@ -28,10 +28,12 @@ class ReportListResponse(ReportResponse):
 
 class ExecutorCreate(BaseModel):
     name: str
+    email: str | None = None
 
 
 class ExecutorUpdate(BaseModel):
     name: str | None = None
+    email: str | None = None
 
 
 class ExecutorResponse(BaseModel):
@@ -39,6 +41,7 @@ class ExecutorResponse(BaseModel):
 
     id: int
     name: str
+    email: str | None = None
 
 
 class SoftwareCreate(BaseModel):
@@ -233,16 +236,13 @@ class PdfTemplateCreate(BaseModel):
     report_type: str
     label: str
     section: str | None = None   # slug; auto-generated from label if omitted
-    anchor: str | None = None    # auto-generated from slug if omitted
     content: str = ""
     is_numbered: bool = True
 
 
 class PdfTemplateUpdate(BaseModel):
     content: str | None = None
-    css: str | None = None
     label: str | None = None
-    anchor: str | None = None
     is_numbered: bool | None = None
 
 
@@ -259,7 +259,6 @@ class PdfTemplateResponse(BaseModel):
     label: str
     anchor: str
     content: str
-    css: str | None
     sort_order: int
     is_system: bool
     is_numbered: bool

@@ -161,7 +161,7 @@ def _parse_preview_body(body: dict) -> dict:
         "report_type": body.get("report_type", "web"),
         "section": body.get("section"),
         "content": body.get("content"),
-        "css": body.get("css"),
+        "css": body.get("css"),  # override CSS from frontend editor
         "sections": body.get("sections"),
     }
 

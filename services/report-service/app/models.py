@@ -90,6 +90,7 @@ class Executor(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255))
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     system_infos: Mapped[list["SystemInfo"]] = relationship(
         "SystemInfo", secondary=system_info_executors, back_populates="executors"
@@ -232,14 +233,17 @@ class PdfTemplate(Base):
     report_type: Mapped[str] = mapped_column(String(50))
     section: Mapped[str] = mapped_column(String(50))
     label: Mapped[str] = mapped_column(String(255), default="", server_default="")
-    anchor: Mapped[str] = mapped_column(String(100), default="", server_default="")
     content: Mapped[str] = mapped_column(Text, default="")
-    css: Mapped[str | None] = mapped_column(Text, nullable=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     is_system: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     is_numbered: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
     is_builtin: Mapped[bool] = mapped_column(Boolean, default=False, server_default="0")
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    @property
+    def anchor(self) -> str:
+        from app.pdf_template_defaults import get_anchor
+        return get_anchor(self.section)
 
     versions: Mapped[list["PdfTemplateVersion"]] = relationship(
         "PdfTemplateVersion", back_populates="template", cascade="all, delete-orphan",

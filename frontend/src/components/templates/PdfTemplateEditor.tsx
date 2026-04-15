@@ -333,7 +333,7 @@ export default function PdfTemplateEditor() {
         report_type: activeType,
         section: activeSection,
         content,
-        css: stylesTemplate?.content,
+        css: activeSection === "styles" ? content : (stylesTemplate?.content ?? ""),
         sections: sectionMetas,
       };
       try {
@@ -392,7 +392,7 @@ export default function PdfTemplateEditor() {
       setEditorContent(activeTemplate.content);
       setIsDirty(false);
     }
-  }, [activeTemplate?.id, activeTemplate?.updated_at]);
+  }, [activeTemplate?.id, activeTemplate?.updated_at, activeSection]);
 
   // Fetch initial preview on first load or type change; scroll on section change
   useEffect(() => {
@@ -409,7 +409,7 @@ export default function PdfTemplateEditor() {
   const handleEditorChange = (value: string | undefined) => {
     const newContent = value ?? "";
     setEditorContent(newContent);
-    setIsDirty(newContent !== (activeTemplate?.content ?? ""));
+    setIsDirty(newContent !== (activeTemplate ? activeTemplate.content : ""));
 
     if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
     previewTimerRef.current = setTimeout(() => {
@@ -426,11 +426,7 @@ export default function PdfTemplateEditor() {
   const saveMutation = useMutation({
     mutationFn: () => {
       if (!activeTemplate) throw new Error("No template");
-      const payload =
-        activeSection === "styles"
-          ? { css: editorContent, content: editorContent }
-          : { content: editorContent };
-      return updatePdfTemplate(activeTemplate.id, payload);
+      return updatePdfTemplate(activeTemplate.id, { content: editorContent });
     },
     onSuccess: () => {
       toast.success("Шаблон сохранён");
@@ -514,7 +510,7 @@ export default function PdfTemplateEditor() {
   const { data: versions = [], isLoading: versionsLoading } = useQuery({
     queryKey: ["pdf-template-versions", activeTemplate?.id],
     queryFn: () => getPdfTemplateVersions(activeTemplate!.id),
-    enabled: !!activeTemplate && activeSection !== "styles",
+    enabled: !!activeTemplate,
   });
 
   const restoreMutation = useMutation({
@@ -596,9 +592,13 @@ export default function PdfTemplateEditor() {
     setVersionDropdownOpen(null);
   };
 
+  const longPressTriggeredRef = useRef(false);
+
   const startLongPress = (direction: "prev" | "next") => {
+    longPressTriggeredRef.current = false;
     if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
     longPressTimerRef.current = setTimeout(() => {
+      longPressTriggeredRef.current = true;
       setVersionDropdownOpen(direction);
     }, 400);
   };
@@ -609,6 +609,14 @@ export default function PdfTemplateEditor() {
       longPressTimerRef.current = null;
     }
   };
+
+  // Close dropdown on any click outside
+  useEffect(() => {
+    if (!versionDropdownOpen) return;
+    const close = () => setVersionDropdownOpen(null);
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, [versionDropdownOpen]);
 
   const canGoPrev = versions.length > 0 && (viewingVersionIdx === null || viewingVersionIdx < versions.length - 1);
   const canGoNext = viewingVersionIdx !== null;
@@ -680,6 +688,49 @@ export default function PdfTemplateEditor() {
     });
     if (theme === "dark") monaco.editor.setTheme("pah-dark");
 
+    // Override Ctrl+/ to use JSX comments {/* */} instead of HTML <!-- -->
+    editor.addAction({
+      id: "tsx-toggle-comment",
+      label: "Toggle JSX Comment",
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.Slash],
+      run: (ed) => {
+        const model = ed.getModel();
+        const sel = ed.getSelection();
+        if (!model || !sel) return;
+
+        const edits: { range: typeof sel; text: string }[] = [];
+
+        if (sel.startLineNumber === sel.endLineNumber && sel.startColumn === sel.endColumn) {
+          // No selection — toggle line comment
+          const line = model.getLineContent(sel.startLineNumber);
+          const trimmed = line.trim();
+          if (trimmed.startsWith("{/*") && trimmed.endsWith("*/}")) {
+            // Uncomment
+            const newLine = line.replace(/\{\/\*\s?/, "").replace(/\s?\*\/\}/, "");
+            const fullRange = { startLineNumber: sel.startLineNumber, startColumn: 1, endLineNumber: sel.startLineNumber, endColumn: line.length + 1 };
+            edits.push({ range: fullRange as typeof sel, text: newLine });
+          } else {
+            // Comment
+            const indent = line.match(/^(\s*)/)?.[1] ?? "";
+            const content = line.trimStart();
+            const newLine = `${indent}{/* ${content} */}`;
+            const fullRange = { startLineNumber: sel.startLineNumber, startColumn: 1, endLineNumber: sel.startLineNumber, endColumn: line.length + 1 };
+            edits.push({ range: fullRange as typeof sel, text: newLine });
+          }
+        } else {
+          // Selection — wrap in block comment
+          const selectedText = model.getValueInRange(sel);
+          if (selectedText.startsWith("{/*") && selectedText.endsWith("*/}")) {
+            edits.push({ range: sel, text: selectedText.slice(3, -3).trim() });
+          } else {
+            edits.push({ range: sel, text: `{/* ${selectedText} */}` });
+          }
+        }
+
+        ed.executeEdits("tsx-comment", edits);
+      },
+    });
+
     registerSnippets(monaco);
   };
 
@@ -699,7 +750,6 @@ export default function PdfTemplateEditor() {
   };
 
   const canReset = !!activeTemplate?.is_builtin;
-  const canShowVersions = !!activeTemplate && activeSection !== "styles";
 
   return (
     <div className="flex flex-col gap-0" style={{ height: "calc(100vh - 6rem)" }}>
@@ -836,6 +886,7 @@ export default function PdfTemplateEditor() {
               <div className="flex-1 min-h-0">
                 <Editor
                   language={editorLanguage}
+                  path={activeSection === "styles" ? "template.css" : `template-${activeSection}.html`}
                   theme={theme === "dark" ? "pah-dark" : "light"}
                   value={editorContent}
                   onChange={handleEditorChange}
@@ -871,15 +922,6 @@ export default function PdfTemplateEditor() {
                 >
                   Сбросить
                 </button>
-                {canShowVersions && (
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm font-display tracking-wider"
-                    onClick={() => setShowVersionsModal(true)}
-                  >
-                    История
-                  </button>
-                )}
                 <button
                   type="button"
                   className="btn btn-ghost btn-sm font-display tracking-wider"
@@ -894,7 +936,7 @@ export default function PdfTemplateEditor() {
                     <button
                       type="button"
                       className="font-mono text-sm px-1.5 py-0.5 border border-base-300 text-base-content/60 hover:text-primary hover:border-primary/40 disabled:opacity-30 disabled:hover:text-base-content/60 disabled:hover:border-base-300 transition-colors"
-                      onClick={() => navigateVersion("prev")}
+                      onClick={(e) => { if (longPressTriggeredRef.current) { e.stopPropagation(); return; } navigateVersion("prev"); }}
                       onMouseDown={() => startLongPress("prev")}
                       onMouseUp={cancelLongPress}
                       onMouseLeave={cancelLongPress}
@@ -906,20 +948,22 @@ export default function PdfTemplateEditor() {
                     >
                       ‹
                     </button>
-                    <span
-                      className={`font-mono text-[10px] tracking-widest px-1.5 py-0.5 border select-none ${
+                    <button
+                      type="button"
+                      onClick={() => setShowVersionsModal(true)}
+                      className={`font-mono text-[10px] tracking-widest px-1.5 py-0.5 border cursor-pointer hover:border-primary/40 hover:text-primary transition-colors ${
                         viewingVersionIdx === null
                           ? "border-base-content/20 bg-base-content/5 text-base-content/50"
                           : "border-warning/50 bg-warning/10 text-warning"
                       }`}
-                      title={viewingVersionIdx === null ? "Текущая версия" : "Просмотр старой версии"}
+                      title="История версий"
                     >
                       v{currentVersionNumber}/{totalVersions}
-                    </span>
+                    </button>
                     <button
                       type="button"
                       className="font-mono text-sm px-1.5 py-0.5 border border-base-300 text-base-content/60 hover:text-primary hover:border-primary/40 disabled:opacity-30 disabled:hover:text-base-content/60 disabled:hover:border-base-300 transition-colors"
-                      onClick={() => navigateVersion("next")}
+                      onClick={(e) => { if (longPressTriggeredRef.current) { e.stopPropagation(); return; } navigateVersion("next"); }}
                       onMouseDown={() => startLongPress("next")}
                       onMouseUp={cancelLongPress}
                       onMouseLeave={cancelLongPress}
@@ -933,12 +977,10 @@ export default function PdfTemplateEditor() {
                     </button>
 
                     {versionDropdownOpen && (
-                      <>
                         <div
-                          className="fixed inset-0 z-40"
-                          onClick={() => setVersionDropdownOpen(null)}
-                        />
-                        <div className="absolute bottom-full right-0 mb-1 z-50 w-72 max-h-64 overflow-y-auto bg-base-200 border border-base-300 shadow-lg">
+                          className="absolute bottom-full right-0 mb-1 z-50 w-72 max-h-64 overflow-y-auto bg-base-200 border border-base-300"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <div className="label-section px-3 py-1.5 border-b border-base-300 sticky top-0 bg-base-200">
                             Версии секции
                           </div>
@@ -980,7 +1022,6 @@ export default function PdfTemplateEditor() {
                             </div>
                           )}
                         </div>
-                      </>
                     )}
                   </div>
                 )}

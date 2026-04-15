@@ -9,7 +9,6 @@ export interface PdfTemplate {
   label: string;
   anchor: string;
   content: string;
-  css: string | null;
   sort_order: number;
   is_system: boolean;
   is_numbered: boolean;
@@ -19,9 +18,7 @@ export interface PdfTemplate {
 
 export interface PdfTemplateUpdate {
   content?: string;
-  css?: string;
   label?: string;
-  anchor?: string;
   is_numbered?: boolean;
 }
 
@@ -29,7 +26,6 @@ export interface PdfTemplateCreate {
   report_type: string;
   label: string;
   section?: string;
-  anchor?: string;
   content?: string;
   is_numbered?: boolean;
 }

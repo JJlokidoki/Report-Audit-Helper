@@ -113,15 +113,12 @@ async def create_pdf_template(data: PdfTemplateCreate, db: AsyncSession = Depend
     """Create a user section. Slug auto-generated from label if omitted."""
     slug = data.section or _slugify(data.label)
     slug = await _ensure_unique_slug(db, data.report_type, slug)
-    anchor = data.anchor or slug.replace("_", "-")
 
     tpl = PdfTemplate(
         report_type=data.report_type,
         section=slug,
         label=data.label,
-        anchor=anchor,
         content=data.content,
-        css=None,
         sort_order=await _next_sort_order(db, data.report_type),
         is_system=False,
         is_numbered=data.is_numbered,
@@ -150,10 +147,6 @@ async def update_pdf_template(template_id: int, data: PdfTemplateUpdate, db: Asy
         raise HTTPException(404, "Template not found")
 
     updates = data.model_dump(exclude_unset=True)
-
-    # System sections: cannot change anchor
-    if tpl.is_system and "anchor" in updates:
-        raise HTTPException(403, "Cannot change anchor of system section")
 
     # Version content if it changes
     if "content" in updates and updates["content"] != tpl.content:
@@ -193,7 +186,6 @@ async def reset_pdf_template(template_id: int, db: AsyncSession = Depends(get_db
     if new_content != tpl.content:
         await _save_version(db, tpl.id, tpl.content)
     tpl.content = new_content
-    tpl.css = None
     await db.commit()
     await db.refresh(tpl)
     return tpl

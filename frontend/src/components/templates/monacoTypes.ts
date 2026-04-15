@@ -23,7 +23,7 @@ declare interface ReportData {
     accessLevel: string | null;
     knowledgeLevel: string | null;
     testConditions: string | null;
-    executors: { name: string }[];
+    executors: { name: string; email: string | null }[];
     software: { name: string; description: string | null }[];
   };
   summary: {

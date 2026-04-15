@@ -74,10 +74,10 @@ export const updateCheck = (reportId: number, checkId: string, data: { status?: 
 export const getExecutors = () =>
   client.get<Executor[]>("/executors").then((r) => r.data);
 
-export const createExecutor = (data: { name: string }) =>
+export const createExecutor = (data: { name: string; email?: string | null }) =>
   client.post<Executor>("/executors", data).then((r) => r.data);
 
-export const updateExecutor = (id: number, data: { name?: string }) =>
+export const updateExecutor = (id: number, data: { name?: string; email?: string | null }) =>
   client.put<Executor>(`/executors/${id}`, data).then((r) => r.data);
 
 export const deleteExecutor = (id: number) =>

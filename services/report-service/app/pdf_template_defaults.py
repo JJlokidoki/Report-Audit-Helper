@@ -25,9 +25,22 @@ SECTIONS = [
 class SectionDefault:
     section: str
     label: str
-    anchor: str
     is_system: bool
     is_numbered: bool
+
+
+# Anchors that differ from the default section.replace("_", "-") rule
+BUILTIN_ANCHORS: dict[str, str] = {
+    "title": "title-page",
+    "vulnerability": "vulnerabilities",
+    "threat_classification": "threat-class",
+    "styles": "",
+}
+
+
+def get_anchor(section: str) -> str:
+    """Compute HTML anchor id from section slug."""
+    return BUILTIN_ANCHORS.get(section, section.replace("_", "-"))
 
 # Default templates for all report types (based on report-preview.html)
 _DEFAULT_CONTENT: dict[str, str] = {
@@ -829,14 +842,14 @@ tbody tr:last-child td {
 
 
 DEFAULT_SECTIONS: list[SectionDefault] = [
-    SectionDefault("title",                 "Титульная страница",   "title-page",      True,  False),
-    SectionDefault("toc",                   "Оглавление",           "toc",             True,  False),
-    SectionDefault("general_info",          "Общая информация",     "general-info",    False, True),
-    SectionDefault("test_results",          "Результаты тестирования", "test-results", False, True),
-    SectionDefault("vulnerability",         "Уязвимости",           "vulnerabilities", False, True),
-    SectionDefault("checklist",             "Чеклист",              "checklist",       False, True),
-    SectionDefault("threat_classification", "Классификация угроз",  "threat-class",    False, True),
-    SectionDefault("styles",                "CSS стили",            "",                True,  False),
+    SectionDefault("title",                 "Титульная страница",      True,  False),
+    SectionDefault("toc",                   "Оглавление",              True,  False),
+    SectionDefault("general_info",          "Общая информация",        False, True),
+    SectionDefault("test_results",          "Результаты тестирования", False, True),
+    SectionDefault("vulnerability",         "Уязвимости",              False, True),
+    SectionDefault("checklist",             "Чеклист",                 False, True),
+    SectionDefault("threat_classification", "Классификация угроз",     False, True),
+    SectionDefault("styles",                "CSS стили",               True,  False),
 ]
 
 _BY_SLUG: dict[str, SectionDefault] = {d.section: d for d in DEFAULT_SECTIONS}
@@ -851,8 +864,8 @@ async def seed_pdf_templates(db: AsyncSession) -> None:
     """Create default PDF templates and backfill metadata for existing rows.
 
     - Inserts missing rows for new report_types at first startup.
-    - Backfills label/anchor/is_system/is_numbered/is_builtin on existing rows.
-    - Never overwrites user-edited content or css.
+    - Backfills label/is_system/is_numbered/is_builtin on existing rows.
+    - Never overwrites user-edited content.
     """
     result = await db.execute(select(PdfTemplate))
     rows = {(t.report_type, t.section): t for t in result.scalars().all()}
@@ -868,9 +881,6 @@ async def seed_pdf_templates(db: AsyncSession) -> None:
                 if not row.label:
                     row.label = d.label
                     changed = True
-                if not row.anchor:
-                    row.anchor = d.anchor
-                    changed = True
                 if row.is_system != d.is_system:
                     row.is_system = d.is_system
                     changed = True
@@ -882,9 +892,7 @@ async def seed_pdf_templates(db: AsyncSession) -> None:
                     report_type=rt,
                     section=d.section,
                     label=d.label,
-                    anchor=d.anchor,
                     content=defaults.get(d.section, ""),
-                    css=None,
                     sort_order=order,
                     is_system=d.is_system,
                     is_numbered=d.is_numbered,

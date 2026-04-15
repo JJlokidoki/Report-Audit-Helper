@@ -11,7 +11,7 @@ async def test_list_pdf_templates_has_new_fields(client: AsyncClient):
 
     for t in templates:
         assert "label" in t
-        assert "anchor" in t
+        assert "anchor" in t  # computed from section slug
         assert "is_system" in t
         assert "is_numbered" in t
         assert "is_builtin" in t
@@ -40,7 +40,7 @@ async def test_create_user_section(client: AsyncClient):
     data = resp.json()
     assert data["section"] == "my_custom_section"
     assert data["label"] == "My Custom Section"
-    assert data["anchor"] == "my-custom-section"
+    assert data["anchor"] == "my-custom-section"  # computed from section slug
     assert data["is_system"] is False
     assert data["is_builtin"] is False
     assert data["is_numbered"] is True
@@ -101,18 +101,6 @@ async def test_update_label_system_section_allowed(client: AsyncClient):
     )
     assert resp.status_code == 200
     assert resp.json()["label"] == "Новый заголовок"
-
-
-@pytest.mark.asyncio
-async def test_update_anchor_system_section_forbidden(client: AsyncClient):
-    resp = await client.get("/api/pdf-templates", params={"report_type": "web"})
-    title_id = next(t["id"] for t in resp.json() if t["section"] == "title")
-
-    resp = await client.put(
-        f"/api/pdf-templates/{title_id}",
-        json={"anchor": "new-anchor"},
-    )
-    assert resp.status_code == 403
 
 
 @pytest.mark.asyncio
@@ -220,3 +208,40 @@ async def test_versions_cascade_on_delete(client: AsyncClient):
 
     resp = await client.get(f"/api/pdf-templates/{sid}/versions")
     assert resp.json() == []
+
+
+@pytest.mark.asyncio
+async def test_styles_version_created_on_content_change(client: AsyncClient):
+    """Styles section uses content field — versioning works the same as other sections."""
+    resp = await client.get("/api/pdf-templates", params={"report_type": "web"})
+    styles_id = next(t["id"] for t in resp.json() if t["section"] == "styles")
+
+    resp = await client.get(f"/api/pdf-templates/{styles_id}/versions")
+    initial_count = len(resp.json())
+
+    await client.put(f"/api/pdf-templates/{styles_id}", json={"content": "body { color: red; }"})
+    await client.put(f"/api/pdf-templates/{styles_id}", json={"content": "body { color: blue; }"})
+
+    resp = await client.get(f"/api/pdf-templates/{styles_id}/versions")
+    assert len(resp.json()) == initial_count + 2
+
+
+@pytest.mark.asyncio
+async def test_styles_restore_version(client: AsyncClient):
+    """Restoring a version on styles section works via content field."""
+    resp = await client.get("/api/pdf-templates", params={"report_type": "web"})
+    styles = next(t for t in resp.json() if t["section"] == "styles")
+    styles_id = styles["id"]
+    original_content = styles["content"]
+
+    await client.put(f"/api/pdf-templates/{styles_id}", json={"content": "body { font-size: 99px; }"})
+
+    resp = await client.get(f"/api/pdf-templates/{styles_id}/versions")
+    versions = resp.json()
+    version_with_original = next(v for v in versions if v["content"] == original_content)
+
+    resp = await client.post(
+        f"/api/pdf-templates/{styles_id}/versions/{version_with_original['id']}/restore"
+    )
+    assert resp.status_code == 200
+    assert resp.json()["content"] == original_content

@@ -25,10 +25,11 @@ async def _migrate(conn) -> None:
         "ALTER TABLE software ADD COLUMN labels TEXT NOT NULL DEFAULT '[]'",
         "ALTER TABLE pdf_template ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE pdf_template ADD COLUMN label VARCHAR(255) NOT NULL DEFAULT ''",
-        "ALTER TABLE pdf_template ADD COLUMN anchor VARCHAR(100) NOT NULL DEFAULT ''",
+        # anchor column removed — computed from section slug via @property
         "ALTER TABLE pdf_template ADD COLUMN is_system BOOLEAN NOT NULL DEFAULT 0",
         "ALTER TABLE pdf_template ADD COLUMN is_numbered BOOLEAN NOT NULL DEFAULT 1",
         "ALTER TABLE pdf_template ADD COLUMN is_builtin BOOLEAN NOT NULL DEFAULT 0",
+        "ALTER TABLE executor ADD COLUMN email VARCHAR(255)",
     ]:
         try:
             await conn.execute(text(stmt))

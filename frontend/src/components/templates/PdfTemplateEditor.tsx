@@ -930,6 +930,23 @@ export default function PdfTemplateEditor() {
                 >
                   Обновить
                 </button>
+                {activeTemplate && activeSection !== "styles" && (
+                  <label className="flex items-center gap-1.5 cursor-pointer select-none ml-2" title="Включить секцию в нумерацию глав отчёта">
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-xs"
+                      checked={activeTemplate.is_numbered}
+                      onChange={(e) => {
+                        updatePdfTemplate(activeTemplate.id, { is_numbered: e.target.checked }).then(() => {
+                          queryClient.invalidateQueries({ queryKey: ["pdf-templates", activeType] });
+                          previewRenderedRef.current = false;
+                          fetchPreview(editorContent);
+                        });
+                      }}
+                    />
+                    <span className="font-mono text-[10px] tracking-wider text-base-content/50">нумерация</span>
+                  </label>
+                )}
                 <div className="flex-1" />
                 {activeTemplate && activeSection !== "styles" && (
                   <div className="flex items-center gap-1 relative">

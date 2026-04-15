@@ -271,6 +271,8 @@ export default function PdfTemplateEditor() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
+  const [pendingNav, setPendingNav] = useState<(() => void) | null>(null);
+
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [newLabel, setNewLabel] = useState("");
   const [newIsNumbered, setNewIsNumbered] = useState(true);
@@ -621,13 +623,14 @@ export default function PdfTemplateEditor() {
   const canGoPrev = versions.length > 0 && (viewingVersionIdx === null || viewingVersionIdx < versions.length - 1);
   const canGoNext = viewingVersionIdx !== null;
 
-  const handleSectionChange = (section: string) => {
+  const doSectionChange = (section: string) => {
     if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
     setActiveSection(section);
+    setIsDirty(false);
     scrollToSection(section);
   };
 
-  const handleTypeChange = (type: ReportType) => {
+  const doTypeChange = (type: ReportType) => {
     if (previewTimerRef.current) clearTimeout(previewTimerRef.current);
     setActiveType(type);
     setActiveSection("title");
@@ -638,6 +641,18 @@ export default function PdfTemplateEditor() {
     }
     previewRenderedRef.current = false;
     setIsDirty(false);
+  };
+
+  const handleSectionChange = (section: string) => {
+    if (section === activeSection) return;
+    if (isDirty) { setPendingNav(() => () => doSectionChange(section)); return; }
+    doSectionChange(section);
+  };
+
+  const handleTypeChange = (type: ReportType) => {
+    if (type === activeType) return;
+    if (isDirty) { setPendingNav(() => () => doTypeChange(type)); return; }
+    doTypeChange(type);
   };
 
   const editorLanguage = activeSection === "styles" ? "css" : "html";
@@ -1104,6 +1119,36 @@ export default function PdfTemplateEditor() {
           </div>
         </div>
       )}
+
+      {/* Unsaved changes warning */}
+      <ModalShell
+        open={!!pendingNav}
+        onClose={() => setPendingNav(null)}
+        title="Несохранённые изменения"
+        maxWidth="max-w-sm"
+        actions={
+          <>
+            <button type="button" className="btn btn-sm" onClick={() => setPendingNav(null)}>
+              Остаться
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm btn-warning font-display tracking-wider"
+              onClick={() => {
+                const nav = pendingNav;
+                setPendingNav(null);
+                nav?.();
+              }}
+            >
+              Продолжить без сохранения
+            </button>
+          </>
+        }
+      >
+        <p className="text-sm text-base-content/70">
+          Изменения в текущей секции не сохранены. При переходе они будут потеряны.
+        </p>
+      </ModalShell>
 
       <ConfirmModal
         open={resetConfirmOpen}
